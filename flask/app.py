@@ -7,12 +7,20 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return get_corpus()
+  
 
 
 @app.route('/auth')
 def auth():
     return render_template('auth.html')
+
+
+def get_corpus():
+    url = "http://localhost:80/corpus"
+    response = requests.get(url)
+    return response.text
+    
 
 
 @app.route('/main', methods=['post', 'get'])
@@ -47,6 +55,7 @@ def login():
 
     return render_template('main.html', res=res, session=session, name=name, title=title)
 
+HOST_PORT="5000"
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(port=HOST_PORT)
