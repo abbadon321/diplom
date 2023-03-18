@@ -1,10 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>FlaskBlog</title>
-</head>
-<body>
-   <h1>Welcome to FlaskBlog</h1>
-</body>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="../static/index-styles.css" />
+  </head>
+  <body>
+    <div id="login">
+      <h1 align="center">
+        <strong>Здравствуйте.</strong>
+        <br />Пожалуйста, авторизуйтесь
+      </h1>
+
+      <form action="main" method="post">
+        <fieldset>
+          <p>
+            <input
+              type="text"
+              name="username"
+              required
+              placeholder="Имя пользователя"
+            />
+          </p>
+          <p>
+            <input
+              type="password"
+              name="password"
+              required
+              placeholder="Пароль"
+            />
+          </p>
+          <p><input type="submit" value="Login" /></p>
+        </fieldset>
+      </form>
+    </div>
+  </body>
 </html>

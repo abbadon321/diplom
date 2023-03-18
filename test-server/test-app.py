@@ -6,29 +6,28 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 
-@app.route('/index')
+@app.route('/')
 def index():
-    return 'Hello!'
+    return render_template("index.html")
 
 
-
-@app.route('/corpus', methods=["GET","POST"])
+@app.route('/corpus', methods=["GET", "POST"])
 def corpus():
     corpuses = {
         "corpuses": [
             {
-                "KFEN":'КФЕН',
-                "GUK":'ГУК',
-                "ULK":'УЛК'
+                "KFEN": 'КФЕН',
+                "GUK": 'ГУК',
+                "ULK": 'УЛК'
             }
         ]
     }
 
-    return jsonify(corpuses)
+    # return jsonify(corpuses)
     return corpuses
 
 
-HOST_PORT="80"
+HOST_PORT = "8000"
 if __name__ == '__main__':
     app.debug = True
     app.run(port=HOST_PORT)
