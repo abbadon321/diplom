@@ -1,18 +1,16 @@
 from flask import Flask, render_template, request
 import requests
+from openpyxl import load_workbook
+import pandas as pd
 
 
 app = Flask(__name__)
 
 
 @app.route('/')
+@app.route('/auth')
 def index():
     return render_template("index.html")
-
-
-@app.route('/auth')
-def auth():
-    return render_template('auth.html')
 
 
 def get_corpus():
@@ -54,6 +52,21 @@ def login():
             "<strong>", "").replace("</strong> <br>", "") + "!"
     print(username, password)
     return render_template('main.html', res=res, session=session, name=name, title=title)
+
+
+@app.route("/schedule")
+def schedule():
+    wb = load_workbook(filename="static/schedule.xlsx")
+    # sheets = []
+    sheets_names = wb.sheetnames
+    # for sh in sheets_names:
+    #     wb.active = sheets_names.index(sh)
+    #     sheet = wb.active
+    #     if sheet['B6'].value is not None:
+    #         print(sheet['B6'].value)
+    data = pd.read_excel(
+        "static/schedule.xlsx", sheet_name=[sheets_names[1]], header=None)
+    return render_template("schedule.html", data=data.keys())
 
 
 HOST_PORT = "5000"

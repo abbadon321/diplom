@@ -1,23 +1,14 @@
-@use postcss-preset-env;
-
-/* ---------- FONTAWESOME ---------- */
-/* ---------- https://fortawesome.github.com/Font-Awesome/ ---------- */
-/* ---------- http://weloveiconfonts.com/ ---------- */
+/* @use postcss-preset-env; */
 
 @import url(https://weloveiconfonts.com/api/?family=fontawesome);
 
-/* ---------- ERIC MEYER'S RESET CSS ---------- */
-/* ---------- https://meyerweb.com/eric/tools/css/reset/ ---------- */
-
 @import url(https://meyerweb.com/eric/tools/css/reset/reset.css);
 
-/* ---------- FONTAWESOME ---------- */
 
 [class*="fontawesome-"]:before {
   font-family: 'FontAwesome', sans-serif;
 }
 
-/* ---------- GENERAL ---------- */
 
 body {
 	background: #f4f4f4;
@@ -45,7 +36,6 @@ strong {
 
 .uppercase { text-transform: uppercase; }
 
-/* ---------- LOGIN ---------- */
 
 #login {
 	margin: 50px auto;
