@@ -1,8 +1,6 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import requests
 from openpyxl import load_workbook
-import pandas as pd
-
 
 app = Flask(__name__)
 
@@ -11,12 +9,6 @@ app = Flask(__name__)
 @app.route('/auth')
 def index():
     return render_template("index.html")
-
-
-def get_corpus():
-    url = "http://localhost:80/corpus"
-    response = requests.get(url)
-    return response.text
 
 
 @app.route('/main', methods=['post', 'get'])
@@ -54,19 +46,35 @@ def login():
     return render_template('main.html', res=res, session=session, name=name, title=title)
 
 
-@app.route("/schedule")
+@app.route("/schedule", methods=['POST'])
 def schedule():
-    wb = load_workbook(filename="static/schedule.xlsx")
-    # sheets = []
-    sheets_names = wb.sheetnames
-    # for sh in sheets_names:
-    #     wb.active = sheets_names.index(sh)
-    #     sheet = wb.active
-    #     if sheet['B6'].value is not None:
-    #         print(sheet['B6'].value)
-    data = pd.read_excel(
-        "static/schedule.xlsx", sheet_name=[sheets_names[1]], header=None)
-    return render_template("schedule.html", data=data.keys())
+    file = request.files['file']
+    file.save('static/' + file.filename)
+    if file:
+        data_dict = {}
+        wb = load_workbook(filename='static/' + file.filename)
+        sheets_names = wb.sheetnames
+        sheet_data = {}
+        for sh in sheets_names:
+            values = []
+            wb.active = sheets_names.index(sh)
+            sheet = wb.active
+            for cell in sheet[3]:
+                if cell.value == "Наименование группы":
+                    next_cell = sheet.cell(
+                        row=cell.row + 1, column=cell.column)
+                    values.append(next_cell.value)
+            sheet_data[sh] = values
+        data_dict.update(sheet_data)
+        return render_template('schedule.html', data=data_dict)
+    else:
+        return redirect(url_for('main'))
+
+
+def get_corpus():
+    url = "http://localhost:80/corpus"
+    response = requests.get(url)
+    return response.text
 
 
 HOST_PORT = "5000"

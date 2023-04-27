@@ -6,9 +6,14 @@
   </head>
   <body>
     <h1>{{name}}</h1>
-    <form action="/schedule" method="post">
-      <input type="file" id="schedule" name="schedulename">
-      <input type="submit">
+    <form action="/schedule" method="post" enctype="multipart/form-data">
+      <input
+        type="file"
+        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+        id="schedule"
+        name="file"
+      />
+      <button type="submit">Загрузить</button>
     </form>
   </body>
 </html>
