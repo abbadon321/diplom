@@ -8,7 +8,7 @@ app = Flask(__name__)
 @app.route('/')
 @app.route('/auth')
 def index():
-    return render_template("index.html")
+    return render_template('index.html')
 
 
 @app.route('/main', methods=['post', 'get'])
@@ -40,9 +40,7 @@ def login():
         title = "Login failed"
         right_index = res.text.find("<strong>Ошибка!</strong>")
         left_index = res.text.find("авторизация,") + 11
-        name = res.text[right_index:left_index].replace(
-            "<strong>", "").replace("</strong> <br>", "") + "!"
-    print(username, password)
+        name = "Ошибка авторизации! Неверные логин и/или пароль"
     return render_template('main.html', res=res, session=session, name=name, title=title)
 
 
@@ -55,10 +53,14 @@ def schedule():
         wb = load_workbook(filename='static/' + file.filename)
         sheets_names = wb.sheetnames
         sheet_data = {}
+
+        # цикл по листам excel-файла
         for sh in sheets_names:
             values = []
             wb.active = sheets_names.index(sh)
             sheet = wb.active
+
+            # цикл по строкам
             for cell in sheet[3]:
                 if cell.value == "Наименование группы":
                     next_cell = sheet.cell(
@@ -68,7 +70,8 @@ def schedule():
         data_dict.update(sheet_data)
         return render_template('schedule.html', data=data_dict)
     else:
-        return redirect(url_for('main'))
+        error = "Ошибка при загрузке файла"
+        return redirect(url_for('main'), error=error)
 
 
 def get_corpus():
