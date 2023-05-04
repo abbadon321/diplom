@@ -5,6 +5,16 @@ from openpyxl import load_workbook
 app = Flask(__name__)
 
 
+@app.route('/step_one')
+def step_one():
+    return render_template("step_one.html")
+
+
+@app.route('/step_two')
+def step_two():
+    return render_template("step_two.html")
+
+
 @app.route('/')
 @app.route('/auth')
 def index():
@@ -12,7 +22,7 @@ def index():
 
 
 @app.route('/main', methods=['post', 'get'])
-def login():
+def authorize():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -45,30 +55,48 @@ def login():
 
 
 @app.route("/schedule", methods=['POST'])
-def schedule():
+def schedule_parse():
     file = request.files['file']
     file.save('static/' + file.filename)
+    schedule = {}
+
     if file:
-        data_dict = {}
         wb = load_workbook(filename='static/' + file.filename)
         sheets_names = wb.sheetnames
-        sheet_data = {}
 
         # цикл по листам excel-файла
         for sh in sheets_names:
-            values = []
             wb.active = sheets_names.index(sh)
-            sheet = wb.active
+            ws = wb.active
+            group_name = ""
+            lesson = {}
 
-            # цикл по строкам
-            for cell in sheet[3]:
-                if cell.value == "Наименование группы":
-                    next_cell = sheet.cell(
-                        row=cell.row + 1, column=cell.column)
-                    values.append(next_cell.value)
-            sheet_data[sh] = values
-        data_dict.update(sheet_data)
-        return render_template('schedule.html', data=data_dict)
+            for row in ws.iter_rows():
+                if row[0].value == "Суббота":
+                    max_row = row[0].row
+
+            # цикл по всем группам
+            for i in range(3, ws.max_column, 4):
+                group_name = ws.cell(row=4, column=i).value
+                if group_name != "**" and group_name != "*":
+                    # цикл по занятиям 1-ой группы
+                    for j in range(6, max_row + 1, 6):
+                        for k in range(j, j + 6):
+                            if ws.cell(row=k, column=3).value is not None:
+                                lesson = {
+                                    "номер пары": k - 5,
+                                    "день недели": (ws.cell(row=j, column=1).value, ""),
+                                    "временной отрезок": (ws.cell(row=k, column=2).value, ""),
+                                    "название дисциплины": (ws.cell(row=k, column=3).value, ""),
+                                    "ФИО преподавателя": (ws.cell(row=k, column=4).value, ""),
+                                    "вид деятельности": (ws.cell(row=k, column=5).value, ""),
+                                    "номер аудитории": (ws.cell(row=k, column=6).value, ""),
+                                }
+                                schedule.setdefault(
+                                    group_name, []).append(lesson)
+
+        return render_template('schedule.html', data=schedule)
+
     else:
         error = "Ошибка при загрузке файла"
         return redirect(url_for('main'), error=error)

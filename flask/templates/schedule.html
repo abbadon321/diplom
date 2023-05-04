@@ -1,5 +1,34 @@
-<p>
-
-    {{data}}
-
-</p>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Расписание занятий</title>
+  </head>
+  <body>
+    {% for group, lessons in data.items() %}
+    <h1>{{ group }}</h1>
+    <table>
+      <tr>
+        <th>№ пары</th>
+        <th>День недели</th>
+        <th>Время</th>
+        <th>Дисциплина</th>
+        <th>Преподаватель</th>
+        <th>Вид деятельности</th>
+        <th>Аудитория</th>
+      </tr>
+      {% for lesson in lessons %}
+      <tr>
+        <td>{{ lesson['номер пары'] }}</td>
+        <td>{{ lesson['день недели'] }}</td>
+        <td>{{ lesson['временной отрезок'] }}</td>
+        <td>{{ lesson['название дисциплины'] }}</td>
+        <td>{{ lesson['ФИО преподавателя'] }}</td>
+        <td>{{ lesson['вид деятельности'] }}</td>
+        <td>{{ lesson['номер аудитории'] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+  </body>
+</html>

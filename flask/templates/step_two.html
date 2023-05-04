@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Северо-Восточный федеральный университет</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <link
+      href="/raspisanie/css/bootstrap.min.css"
+      rel="stylesheet"
+      media="screen"
+    />
+    <script src="/raspisanie/js/jquery.js"></script>
+    <script src="/raspisanie/js/bootstrap.min.js"></script>
+    <script
+      src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.min.js"
+      type="text/javascript"
+    ></script>
+    <link
+      href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.min.css"
+      type="text/css"
+      data-template-style="true"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="jquery-ui.min.css" type="text/css" />
+    <style>
+      .ui-autocomplete {
+        z-index: 2147483647;
+        height: 150px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+    </style>
+    <script type="text/javascript" src="jquery-ui.min.js"></script>
+    <link
+      href="context-menu-icons.eot"
+      type="application/vnd.ms-fontobject"
+      data-template-style="true"
+      rel="stylesheet"
+    />
+    <link
+      href="//cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.0.1/jquery.contextMenu.min.css"
+      type="text/css"
+      data-template-style="true"
+      rel="stylesheet"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.0.1/jquery.contextMenu.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.0.1/jquery.ui.position.min.js"></script>
+    <script src="checkmobile.js"></script>
+    <style>
+      input.edit {
+        width: 50%;
+        height: 10%;
+        font: bold 1.2em Arial, sans-serif;
+        color: #0d3967;
+        background-color: #cad5e2;
+        text-shadow: #cad5ff 1px 1px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Редактор расписания (версия 2.0)</h3>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <a
+          class="btn btn-navbar"
+          data-toggle="collapse"
+          data-target=".nav-collapse"
+          href="#"
+        >
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
+        <a class="brand" href="/">s-vfu.ru</a>
+        <div class="nav-collapse">
+          <ul class="nav">
+            <li><a href="#" id="Help">?</a></li>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#"
+                >Расписание<b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a href="/user/rasp/video.php">Новости и видеоинструкции</a>
+                </li>
+                <li><a href="#" id="Statistic">Статистика</a></li>
+                <li><a href="#" id="Excel">Создать печатный вариант</a></li>
+                <li><a href="/user/rasp/makeexcel.php?fac=ИМИ">Шахматка</a></li>
+                <li>
+                  <a href="/user/report/raspisanie/" target="_blank"
+                    >Расписание всего университета</a
+                  >
+                </li>
+
+                <li>
+                  <a href="//s-vfu.ru/raspisanie/" target="_blank"
+                    >s-vfu.ru/raspisanie</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#"
+                >Почасовик<b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li><a href="#" id="Listhours">Список почасовиков</a></li>
+                <li>
+                  <a href="/user/ved/poisk.php" target="_blank"
+                    >Добавить почасовика</a
+                  >
+                </li>
+                <li>
+                  <a href="#" id="Addhours"
+                    >Добавить почасовика, если не найден в первых двух
+                    ссылках</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#"
+                >Доп.функционал<b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li><a href="#" id="AddCabinet">Справочник аудиторий</a></li>
+                <li><a href="#" id="AddGroups">Работа с группами</a></li>
+                <li>
+                  <a href="/user/report/plany/" target="_blank"
+                    >Рупы всего университета(для сверки)</a
+                  >
+                </li>
+                <li>
+                  <a href="/user/control/?o=group" target="_blank"
+                    >Добавление группы для регистрации первокурсников ЭИОС</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li><a href="#" id="Help"></a></li>
+            <li><a href="#" id="Help"></a></li>
+            <li><a href="#" id="Help"></a></li>
+            <li><a href="#" id="Help"></a></li>
+          </ul>
+        </div>
+        <!-- /.nav-collapse -->
+      </div>
+      <!-- /navbar-inner -->
+    </div>
+    <!-- /navbar -->
+    <div class="alert alert-warning">
+      <font color="red"
+        ><strong
+          >Предварительные ГРУППЫ создаются в платформе
+          <a href="/user/control/?o=group">Перейти в MyRoute</a></strong
+        ></font
+      ><br />
+      <u
+        >Добавлено копирование данных с группы на группу,
+        <a href="/user/rasp/video.php">подробнее тут</a></u
+      >. Внимание при смене года уже автоматически считает семестр - пригодится
+      для дисциплин старых годов. Шаблон для работы с
+      <a href="/user/rasp/macro.xla">Excel</a>
+      <a href="/user/rasp/archive.php"> старым форматом ведомостей</a> Весь
+      функционал по работе с загрузке проверке Excel файлов перенесен в
+      Доп.функции - Работа с Группами - фильтры влияют на вывод результата при
+      выборе этого пункта
+    </div>
+
+    <input
+      type="text"
+      class="edit"
+      name="url"
+      value="/universitet/rukovodstvo-i-struktura/instituty/imi/Vremennoe_raspisanie_IMI_na_1_2020-2021/"
+    /><button id="updateurl">
+      Обновить ссылку на первой странице сайта "Расписание"</button
+    ><br />УЧП:ИМИ
+    <form>
+      <table>
+        <tr>
+          <td>Учебный год:</td>
+          <td>
+            <select name="year">
+              <option value="2022">2022/2023</option>
+              <option value="2021">2021/2022</option>
+              <option value="2020">2020/2021</option>
+              <option value="2019">2019/2020</option>
+              <option value="2018">2018/2019</option>
+              <option value="2017">2017/2018</option>
+              <option value="2016">2016/2017</option>
+            </select>
+          </td>
+        </tr>
+
+        <tr>
+          <td><b>Курс:</b></td>
+          <td>
+            <select name="course" id="course">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="99">1(предварительный)</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Форма обучения:</td>
+          <td>
+            <select name="form" id="studyform">
+              <option value="1|очная">Очная</option>
+              <option value="7|очно-заочная">Очно-заочная</option>
+              <option value="2|заочная">заочная</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Уровень:</td>
+          <td>
+            <select name="code" id="code">
+              <option value="3">Бакалавриат</option>
+              <option value="4">Магистратура</option>
+              <option value="5">Специалитет</option>
+              <option value="6">Аспирантура</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td><b>Семестр*</b></td>
+          <td>
+            <select name="semestr" id="semestr">
+              <option value="1">Зимний(01.09-31.12)</option>
+              <option value="2">Весенний(11.01-30.06)</option>
+            </select>
+          </td>
+        </tr>
+      </table>
+      <!--button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal3" onclick="help()">?</button-->
+      <!--button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal3" onclick="listhours()">Справочник почасовиков своего факультета</button-->
+      <!--button type="button" class="btn btn-primary" data-toggle="modal" data-target="#Modalrup" onclick="addhours('ИМИ')">Добавить почасовика</button-->
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick="loadgroup('loadgroup')"
+      >
+        Шаг 1 Выбрать группы и план</button
+      ><br />
+    </form>
+    <input type="hidden" name="fac" value="ИМИ" /><input
+      type="hidden"
+      name="buid"
+      value="2902"
+    />
+    <div id="show">
+      2022-09-01-2022-12-31
+      <h4>
+        Заполнение расписания ИМИ для плана 02030201_22_2ФИИТ.plx, учебной
+        группы - ИМИ-Б-ФИИТ-21, курс 2 семестр 3 ( учебный год 2022/2023)
+      </h4>
+      <input
+        type="hidden"
+        name="data"
+        value="ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1"
+      /><br /><button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#Modalrup"
+        onclick="Addrow()"
+      >
+        Шаг 2. Добавить строку
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#Modalrup"
+        onclick="Save()"
+      >
+        Шаг 3. Сохранить (Публикация)
+      </button>
+      <table id="mytable" class="display" border="1">
+        <thead>
+          <tr>
+            <th>Когда</th>
+            <th>Кто и что</th>
+            <th>Где</th>
+            <th>Комментарии</th>
+          </tr>
+        </thead>
+        <tbody class="contentmenu">
+          <tr>
+            <td id="A-623793">ПОНЕДЕЛЬНИК с 13.10 по 31.12 [08:00-09:35]</td>
+            <td id="B-623793">Иностранный язык (практика) -нет</td>
+            <td id="C-623793">445(КФЕН)</td>
+            <td id="D-623793"></td>
+          </tr>
+          <tr>
+            <td id="A-623797">ПОНЕДЕЛЬНИК* с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623797">Экономика (лекция) -Кампеева Е. Е.</td>
+            <td id="C-623797">263(КФЕН)</td>
+            <td id="D-623797"></td>
+          </tr>
+          <tr>
+            <td id="A-623799">ПОНЕДЕЛЬНИК с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623799">
+              Теория автоматов и формальных языков (Лабораторная работа)
+              -Никифоров Д. В.
+            </td>
+            <td id="C-623799">424(КФЕН)</td>
+            <td id="D-623799">1 подгруппа</td>
+          </tr>
+          <tr>
+            <td id="A-623798">ПОНЕДЕЛЬНИК* с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623798">Экономика (практика) -Кампеева Е. Е.</td>
+            <td id="C-623798">445(КФЕН)</td>
+            <td id="D-623798"></td>
+          </tr>
+          <tr>
+            <td id="A-623802">ПОНЕДЕЛЬНИК* с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623802">
+              Социальная психология (практика) -Осипова Г. С.
+            </td>
+            <td id="C-623802">445(КФЕН)</td>
+            <td id="D-623802"></td>
+          </tr>
+          <tr>
+            <td id="A-623792">ВТОРНИК с 13.10 по 31.12 [08:00-09:35]</td>
+            <td id="B-623792">Иностранный язык (практика) -нет</td>
+            <td id="C-623792">445(КФЕН)</td>
+            <td id="D-623792"></td>
+          </tr>
+          <tr>
+            <td id="A-623803">ВТОРНИК с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623803">
+              Математическая логика и теория алгоритмов (лекция) -Поисеева С. С.
+            </td>
+            <td id="C-623803">561(КФЕН)</td>
+            <td id="D-623803"></td>
+          </tr>
+          <tr>
+            <td id="A-623804">ВТОРНИК** с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623804">Культурология (практика) -Васильева Н. П.</td>
+            <td id="C-623804">324(КФЕН)</td>
+            <td id="D-623804"></td>
+          </tr>
+          <tr>
+            <td id="A-623805">ВТОРНИК** с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623805">Культурология (лекция) -Васильева Н. П.</td>
+            <td id="C-623805">263(КФЕН)</td>
+            <td id="D-623805"></td>
+          </tr>
+          <tr>
+            <td id="A-623794">СРЕДА с 13.10 по 31.12 [08:00-09:35]</td>
+            <td id="B-623794">Иностранный язык (практика) -нет</td>
+            <td id="C-623794">445(КФЕН)</td>
+            <td id="D-623794"></td>
+          </tr>
+          <tr>
+            <td id="A-623811">СРЕДА с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623811">
+              Элективные дисциплины по физической культуре и спорту (практика)
+              -нет
+            </td>
+            <td id="C-623811">106(Юность)</td>
+            <td id="D-623811"></td>
+          </tr>
+          <tr>
+            <td id="A-623801">СРЕДА с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623801">
+              Теория автоматов и формальных языков (лекция) -Никифоров Д. В.
+            </td>
+            <td id="C-623801">328(КФЕН)</td>
+            <td id="D-623801"></td>
+          </tr>
+          <tr>
+            <td id="A-623800">СРЕДА с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623800">
+              Теория автоматов и формальных языков (Лабораторная работа)
+              -Никифоров Д. В.
+            </td>
+            <td id="C-623800">424(КФЕН)</td>
+            <td id="D-623800">2 подгруппа</td>
+          </tr>
+          <tr>
+            <td id="A-623796">ЧЕТВЕРГ с 13.10 по 31.12 [08:00-09:35]</td>
+            <td id="B-623796">Иностранный язык (практика) -нет</td>
+            <td id="C-623796">445(КФЕН)</td>
+            <td id="D-623796"></td>
+          </tr>
+          <tr>
+            <td id="A-623806">ЧЕТВЕРГ с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623806">
+              Операционные системы (Лабораторная работа) -Стручкова А. М.
+            </td>
+            <td id="C-623806">436(КФЕН)</td>
+            <td id="D-623806">1 подгруппа</td>
+          </tr>
+          <tr>
+            <td id="A-623807">ЧЕТВЕРГ с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623807">
+              Операционные системы (Лабораторная работа) -Стручкова А. М.
+            </td>
+            <td id="C-623807">436(КФЕН)</td>
+            <td id="D-623807">2 подгруппа</td>
+          </tr>
+          <tr>
+            <td id="A-623795">ПЯТНИЦА с 13.10 по 31.12 [08:00-09:35]</td>
+            <td id="B-623795">Иностранный язык (практика) -нет</td>
+            <td id="C-623795">445(КФЕН)</td>
+            <td id="D-623795"></td>
+          </tr>
+          <tr>
+            <td id="A-623808">ПЯТНИЦА с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623808">
+              Математическая логика и теория алгоритмов (практика) -Поисеева С.
+              С.
+            </td>
+            <td id="C-623808">555(КФЕН)</td>
+            <td id="D-623808"></td>
+          </tr>
+          <tr>
+            <td id="A-623809">ПЯТНИЦА с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623809">Математический анализ (лекция) -Хохолов В. Б.</td>
+            <td id="C-623809">349(КФЕН)</td>
+            <td id="D-623809"></td>
+          </tr>
+          <tr>
+            <td id="A-623810">ПЯТНИЦА с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623810">
+              Математический анализ (практика) -Хохолов В. Б.
+            </td>
+            <td id="C-623810">349(КФЕН)</td>
+            <td id="D-623810"></td>
+          </tr>
+          <tr>
+            <td id="A-623812">СУББОТА с 01.09 по 31.12 [09:50-11:25]</td>
+            <td id="B-623812">
+              Элективные дисциплины по физической культуре и спорту (практика)
+              -нет
+            </td>
+            <td id="C-623812">106(Юность)</td>
+            <td id="D-623812"></td>
+          </tr>
+          <tr>
+            <td id="A-623813">СУББОТА с 01.09 по 31.12 [11:40-13:15]</td>
+            <td id="B-623813">
+              Общеуниверситетские дисциплины по выбору (практика) -нет
+            </td>
+            <td id="C-623813">Интернет(Zoom)</td>
+            <td id="D-623813"></td>
+          </tr>
+          <tr>
+            <td id="A-623814">СУББОТА* с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623814">Социальная психология (лекция) -Осипова Г. С.</td>
+            <td id="C-623814">461(КФЕН)</td>
+            <td id="D-623814"></td>
+          </tr>
+          <tr>
+            <td id="A-623815">СУББОТА** с 01.09 по 31.12 [14:00-15:35]</td>
+            <td id="B-623815">
+              Операционные системы (лекция) -Стручкова А. М.
+            </td>
+            <td id="C-623815">328(КФЕН)</td>
+            <td id="D-623815"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#Modalrup"
+        onclick="Addrow()"
+      >
+        Шаг 2. Добавить строку
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-toggle="modal"
+        data-target="#Modalrup"
+        onclick="Save()"
+      >
+        Шаг 3.Сохранить (Публикация)
+      </button>
+    </div>
+    <div
+      class="modal fade"
+      id="myModal3"
+      tabindex="-1"
+      role="dialog"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" id="rup">Подождите.....</div>
+          <div class="modal-header">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal fade"
+      id="Modalrup"
+      tabindex="-1"
+      role="dialog"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form method="POST" enctype="multipart/form-data">
+            <div class="modal-body" id="rup2">Подождите.....</div>
+            <div class="modal-header">
+              <input type="submit" value="Применить" />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Закрыть
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="library.js?new"></script>
+  </body>
+</html>
