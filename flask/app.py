@@ -68,8 +68,6 @@ def schedule_parse():
         for sh in sheets_names:
             wb.active = sheets_names.index(sh)
             ws = wb.active
-            group_name = ""
-            lesson = {}
 
             for row in ws.iter_rows():
                 if row[0].value == "Суббота":
@@ -78,22 +76,27 @@ def schedule_parse():
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
                 group_name = ws.cell(row=4, column=i).value
+                
                 if group_name != "**" and group_name != "*":
                     # цикл по занятиям 1-ой группы
-                    for j in range(6, max_row + 1, 6):
-                        for k in range(j, j + 6):
-                            if ws.cell(row=k, column=3).value is not None:
-                                lesson = {
-                                    "номер пары": k - 5,
-                                    "день недели": (ws.cell(row=j, column=1).value, ""),
-                                    "временной отрезок": (ws.cell(row=k, column=2).value, ""),
-                                    "название дисциплины": (ws.cell(row=k, column=3).value, ""),
-                                    "ФИО преподавателя": (ws.cell(row=k, column=4).value, ""),
-                                    "вид деятельности": (ws.cell(row=k, column=5).value, ""),
-                                    "номер аудитории": (ws.cell(row=k, column=6).value, ""),
-                                }
-                                schedule.setdefault(
-                                    group_name, []).append(lesson)
+                    for j in range(6, max_row + 1):
+                        lesson = {}
+                        if ws.cell(row=j, column=1).value is not None:
+                            weekday = ws.cell(row=j, column=1).value
+
+                        # проверка, что дисциплина есть (наличие пары)
+                        if ws.cell(row=j, column=i).value is not None:
+                            lesson = {
+                                "номер пары": j - 5,
+                                "день недели": (weekday, ""),
+                                "временной отрезок": (ws.cell(row=j, column=2).value, ""),
+                                "название дисциплины": (ws.cell(row=j, column=i).value, ""),
+                                "ФИО преподавателя": (ws.cell(row=j, column=i + 1).value, ""),
+                                "вид деятельности": (ws.cell(row=j, column=i + 2).value, ""),
+                                "номер аудитории": (ws.cell(row=j, column=i + 3).value, ""),
+                            }
+                            schedule.setdefault(
+                                group_name, []).append(lesson)
 
         return render_template('schedule.html', data=schedule)
 
@@ -106,6 +109,33 @@ def get_corpus():
     url = "http://localhost:80/corpus"
     response = requests.get(url)
     return response.text
+
+
+#Add a new row
+def add_new_row(lesson):
+    pass
+
+
+#make schedule public
+def deploy_schedule():
+    pass
+
+
+#returns set of tuples
+def get_current_schedule():
+    pass
+
+def get_new_schdeule(excel_schedule):
+    current = get_current_schedule()
+    all_schedule = set(excel_schedule)
+    return list(current - all_schedule)
+
+
+def add_schedule(excel_schedule):
+    to_be_added = get_new_schdeule(excel_schedule)
+    for lesson in to_be_added:
+        add_new_row(lesson)
+    deploy_schedule()
 
 
 HOST_PORT = "5000"
