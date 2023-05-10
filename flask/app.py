@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for
 import requests
+import re
 from openpyxl import load_workbook
 
 app = Flask(__name__)
@@ -8,6 +9,11 @@ app = Flask(__name__)
 @app.route('/step_one')
 def step_one():
     return render_template("step_one.html")
+
+
+@app.route('/test')
+def test():
+    return render_template("test.html")
 
 
 @app.route('/step_two')
@@ -69,15 +75,18 @@ def schedule_parse():
             wb.active = sheets_names.index(sh)
             ws = wb.active
 
+            course = ws.cell(row=2, column=1)
+            year_and_semestr = ws.cell(row=1, column=1)
+
             for row in ws.iter_rows():
                 if row[0].value == "Суббота":
                     max_row = row[0].row
 
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
-                group_name = ws.cell(row=4, column=i).value
-                
-                if group_name != "**" and group_name != "*":
+                group_name = (ws.cell(row=4, column=i).value, ws.title)
+
+                if group_name[0] != "**" and group_name[0] != "*":
                     # цикл по занятиям 1-ой группы
                     for j in range(6, max_row + 1):
                         lesson = {}
@@ -96,13 +105,58 @@ def schedule_parse():
                                 "номер аудитории": (ws.cell(row=j, column=i + 3).value, ""),
                             }
                             schedule.setdefault(
-                                group_name, []).append(lesson)
-
+                                group_name[0], []).append(lesson)
+        fac = "ИМИ"
+        course_id, code = get_course_and_code(course)
+        year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
+        # query(2902, "loadgroup", fac, )
         return render_template('schedule.html', data=schedule)
 
     else:
         error = "Ошибка при загрузке файла"
         return redirect(url_for('main'), error=error)
+
+
+def get_year_and_semestr(string, group_name):
+    string1 = re.findall(r"\b\d+\b(?=\s*полугодие)", string)
+    if string1:
+        semestr = string1[0]
+    else:
+        semestr = "Семестр не определен. Проверьте формат файла!"
+
+    string2 = re.findall(r"полугодие\s+(\d+)\s*-\s*", string)
+    if string2:
+        current_year = int(string2[0][-2:])
+        group_year = int(group_name[-2:])
+        year = current_year - group_year
+
+    else:
+        year = "Семестр не определен. Проверьте формат файла!"
+
+    return (year, semestr)
+
+
+def get_course_and_code(course):
+    if "".join(course.split()).upper() == "1КУРС":
+        course_id = 1
+        code = 3
+    elif "".join(course.split()).upper() == "2КУРС":
+        course_id = 2
+        code = 3
+    elif "".join(course.split()).upper() == "3КУРС":
+        course_id = 3
+        code = 3
+    elif "".join(course.split()).upper() == "4КУРС":
+        course_id = 4
+        code = 3
+    elif "".join(course.split()).upper() == "1КУРСМАГИСТРАТУРЫ":
+        course_id = 5
+        code = 4
+    elif "".join(course.split()).upper() == "2КУРСМАГИСТРАТУРЫ":
+        course_id = 6
+        code = 4
+
+    return (course_id, code)
 
 
 def get_corpus():
@@ -111,19 +165,112 @@ def get_corpus():
     return response.text
 
 
-#Add a new row
+def query(id, action, fac,  code, course, form,
+          semestr, year, filename, id_group, groupname, full):
+    # добавление строки
+    if action == 'addrow':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            'full': full,
+        }
+
+    # удаление строки
+    elif action == 'delete':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            'full': full,
+            "fac": fac,
+            "data": id
+        }
+
+    # удаление расписания
+    elif action == 'remove':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            'full': full,
+            "fac": fac
+        }
+
+    # публикация расписания
+    elif action == 'public':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            'full': full,
+            "fac": fac
+        }
+
+    # сохранение расписания
+    elif action == 'apply':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            'filename': filename,
+            "course": course,
+            "id_group": id_group,
+            "semestr": semestr,
+            "year": year,
+            "fac": fac
+        }
+
+    # выбрать группу
+    elif action == 'loadgroup':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            "fac": fac,
+            "code": code,
+            "course": course,
+            "form": form,
+            "semestr": semestr,
+            "year": year
+        }
+
+    # выбрать руп
+    elif action == 'choicerup':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'id': id,
+            'action': action,
+            "fac": fac,
+            "course": course,
+            "form": form,
+            "semestr": semestr,
+            "year": year,
+            "groupname": groupname,
+        }
+
+
+# Add a new row
 def add_new_row(lesson):
     pass
 
 
-#make schedule public
+# make schedule public
 def deploy_schedule():
     pass
 
 
-#returns set of tuples
+# returns set of tuples
 def get_current_schedule():
     pass
+
 
 def get_new_schdeule(excel_schedule):
     current = get_current_schedule()

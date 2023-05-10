@@ -2,11 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Расписание занятий</title>
+    <title>Расписание занятий {{ zxc }}</title>
   </head>
   <body>
     {% for group, lessons in data.items() %}
-    <h1>{{ group }}</h1>
+    <h1>{{ group[0] }}</h1>
     <table>
       <tr>
         <th>№ пары</th>
