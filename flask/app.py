@@ -64,6 +64,7 @@ def authorize():
 def schedule_parse():
     file = request.files['file']
     file.save('static/' + file.filename)
+    fac = "ИМИ"
     schedule = {}
 
     if file:
@@ -75,8 +76,10 @@ def schedule_parse():
             wb.active = sheets_names.index(sh)
             ws = wb.active
 
-            course = ws.cell(row=2, column=1)
-            year_and_semestr = ws.cell(row=1, column=1)
+            course = str(ws.cell(row=2, column=1).value)
+            year_and_semestr = str(ws.cell(row=1, column=1).value)
+            if course == "None" and year_and_semestr == "None":
+                continue
 
             for row in ws.iter_rows():
                 if row[0].value == "Суббота":
@@ -87,7 +90,7 @@ def schedule_parse():
                 group_name = (ws.cell(row=4, column=i).value, ws.title)
 
                 if group_name[0] != "**" and group_name[0] != "*":
-                    # цикл по занятиям 1-ой группы
+                    # цикл по занятиям одной группы
                     for j in range(6, max_row + 1):
                         lesson = {}
                         if ws.cell(row=j, column=1).value is not None:
@@ -95,6 +98,8 @@ def schedule_parse():
 
                         # проверка, что дисциплина есть (наличие пары)
                         if ws.cell(row=j, column=i).value is not None:
+                            course_id, code = get_course_and_code(course)
+                            year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
                             lesson = {
                                 "номер пары": j - 5,
                                 "день недели": (weekday, ""),
@@ -103,14 +108,16 @@ def schedule_parse():
                                 "ФИО преподавателя": (ws.cell(row=j, column=i + 1).value, ""),
                                 "вид деятельности": (ws.cell(row=j, column=i + 2).value, ""),
                                 "номер аудитории": (ws.cell(row=j, column=i + 3).value, ""),
+                                "код курса и уровня обучения": (course_id, code),
+                                "год, семестр": (year, semestr)
                             }
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
-        fac = "ИМИ"
-        course_id, code = get_course_and_code(course)
-        year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
+        
+            # course_id, code = get_course_and_code(course)
+            # year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
         # query(2902, "loadgroup", fac, )
-        return render_template('schedule.html', data=schedule)
+        return render_template('schedule.html', data=schedule, zxc=(course_id, code), asd=(year, semestr))
 
     else:
         error = "Ошибка при загрузке файла"
@@ -126,36 +133,36 @@ def get_year_and_semestr(string, group_name):
 
     string2 = re.findall(r"полугодие\s+(\d+)\s*-\s*", string)
     if string2:
-        current_year = int(string2[0][-2:])
-        group_year = int(group_name[-2:])
-        year = current_year - group_year
-
+        year = string2[0][-4:]
+        # group_year = int(group_name[-2:])
+        # year = current_year - group_year
     else:
-        year = "Семестр не определен. Проверьте формат файла!"
-
+        year = "Год не определен. Проверьте формат файла!"
     return (year, semestr)
 
 
 def get_course_and_code(course):
-    if "".join(course.split()).upper() == "1КУРС":
+    course_id = 0
+    code = 0
+    string = course.replace(" ", "").upper()
+    if string == "1КУРС":
         course_id = 1
         code = 3
-    elif "".join(course.split()).upper() == "2КУРС":
+    elif string == "2КУРС":
         course_id = 2
         code = 3
-    elif "".join(course.split()).upper() == "3КУРС":
+    elif string == "3КУРС":
         course_id = 3
         code = 3
-    elif "".join(course.split()).upper() == "4КУРС":
+    elif string == "4КУРС":
         course_id = 4
         code = 3
-    elif "".join(course.split()).upper() == "1КУРСМАГИСТРАТУРЫ":
+    elif string == "1КУРСМАГИСТРАТУРЫ":
         course_id = 5
         code = 4
-    elif "".join(course.split()).upper() == "2КУРСМАГИСТРАТУРЫ":
+    elif string == "2КУРСМАГИСТРАТУРЫ":
         course_id = 6
         code = 4
-
     return (course_id, code)
 
 

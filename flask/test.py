@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-wb = load_workbook(filename='flask\static\IMI rasp ochno 2 polug 2022-2023 _30.01.xlsx')
+wb = load_workbook(filename='flask\static\IMI rasp ochno 2 polug 2022-2023_28.02 (1).xlsx')
 sheets_names = wb.sheetnames
 
 # цикл по листам excel-файла
@@ -9,6 +9,12 @@ for sh in sheets_names:
     ws = wb.active
     schedule = {}
     weekday = ""
+    course = ws.cell(row=2, column=1).value
+    year_and_semestr = ws.cell(row=1, column=1).value
+    if course is None and year_and_semestr is None:
+        continue
+    print(course, year_and_semestr)
+
 
     for row in ws.iter_rows():
         if row[0].value == "Суббота":
@@ -34,8 +40,5 @@ for sh in sheets_names:
                         "вид деятельности": (ws.cell(row=j, column=5).value, ""),
                         "номер аудитории": (ws.cell(row=j, column=6).value, ""),
                     }
-                    print(j,i)
                     schedule.setdefault(
                         group_name, []).append(lesson)
-
-print(schedule)
