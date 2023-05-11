@@ -99,7 +99,8 @@ def schedule_parse():
                         # проверка, что дисциплина есть (наличие пары)
                         if ws.cell(row=j, column=i).value is not None:
                             course_id, code = get_course_and_code(course)
-                            year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
+                            year, semestr = get_year_and_semestr(
+                                year_and_semestr, group_name[0])
                             lesson = {
                                 "номер пары": j - 5,
                                 "день недели": (weekday, ""),
@@ -113,7 +114,7 @@ def schedule_parse():
                             }
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
-        
+
             # course_id, code = get_course_and_code(course)
             # year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
         # query(2902, "loadgroup", fac, )
@@ -158,10 +159,10 @@ def get_course_and_code(course):
         course_id = 4
         code = 3
     elif string == "1КУРСМАГИСТРАТУРЫ":
-        course_id = 5
+        course_id = 1
         code = 4
     elif string == "2КУРСМАГИСТРАТУРЫ":
-        course_id = 6
+        course_id = 2
         code = 4
     return (course_id, code)
 
