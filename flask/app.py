@@ -91,7 +91,7 @@ def schedule_parse():
 
                 if group_name[0] != "**" and group_name[0] != "*":
                     # цикл по занятиям одной группы
-                    for j in range(6, max_row + 1):
+                    for j in range(6, 42):
                         lesson = {}
                         if ws.cell(row=j, column=1).value is not None:
                             weekday = ws.cell(row=j, column=1).value
@@ -101,6 +101,7 @@ def schedule_parse():
                             course_id, code = get_course_and_code(course)
                             year, semestr = get_year_and_semestr(
                                 year_and_semestr, group_name[0])
+                            group = query(action="loadgroup", groupname=group_name[0])
                             lesson = {
                                 "номер пары": j - 5,
                                 "день недели": (weekday, ""),
@@ -109,11 +110,13 @@ def schedule_parse():
                                 "ФИО преподавателя": (ws.cell(row=j, column=i + 1).value, ""),
                                 "вид деятельности": (ws.cell(row=j, column=i + 2).value, ""),
                                 "номер аудитории": (ws.cell(row=j, column=i + 3).value, ""),
-                                "код курса и уровня обучения": (course_id, code),
-                                "год, семестр": (year, semestr)
+                                # "код курса и уровня обучения": (course_id, code),
+                                # "год, семестр": (year, semestr),
+                                "данные группы": group
                             }
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
+                            
 
             # course_id, code = get_course_and_code(course)
             # year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
@@ -173,8 +176,8 @@ def get_corpus():
     return response.text
 
 
-def query(id, action, fac,  code, course, form,
-          semestr, year, filename, id_group, groupname, full):
+def query(id=None, action=None, fac=None,  code=None, course=None, form=None,
+          semestr=None, year=None, filename=None, id_group=None, groupname=None, full=None):
     # добавление строки
     if action == 'addrow':
         type = "POST"
@@ -236,17 +239,20 @@ def query(id, action, fac,  code, course, form,
 
     # выбрать группу
     elif action == 'loadgroup':
-        type = "POST"
-        url = "ajax.php"
+        # type = "POST"
+        # url = "ajax.php"
+        # data = {
+        #     'id': id,
+        #     'action': action,
+        #     "fac": fac,
+        #     "code": code,
+        #     "course": course,
+        #     "form": form,
+        #     "semestr": semestr,
+        #     "year": year
+        # }
         data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "code": code,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year
+            "groupname": groupname
         }
 
     # выбрать руп
@@ -263,6 +269,9 @@ def query(id, action, fac,  code, course, form,
             "year": year,
             "groupname": groupname,
         }
+
+    response = requests.post(url="http://localhost:8000/loadgroup", data=data)
+    return response
 
 
 # Add a new row

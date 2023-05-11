@@ -6,6 +6,20 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 
+groups = {
+        "Б-ИВТ-21-1": "09.03.01|7618|ИМИ-Б-ИВТ-21-1|5954",
+        "Б-М-21": "01.03.01|7468|ИМИ-Б-М-21|5996",
+        "Б-ФИИТ-21": "02.03.02|7471|ИМИ-Б-ФИИТ-21|5998",
+        "Б-ИВТ-21-2": "09.03.01|7619|ИМИ-Б-ИВТ-21-2|5999",
+        "Б-ИТСС-21": "11.03.02|7467|ИМИ-Б-ИТСС-21|6003",
+        "Б-МПО-21": "44.03.01|7469|ИМИ-Б-МПО-21|6004",
+        "Б-ПОИМ-21": "44.03.05|7470|ИМИ-Б-ПОИМ-21|6005",
+        "Б-ПИГМУ-21": "09.03.03|7856|ИМИ-Б-ПИГМУ-21|6406",
+        "Б-ПИЭ-21": "09.03.03|7855|ИМИ-Б-ПИЭ-21|6407",
+        "Б-ПМИ-21": "01.03.02|7623|ИМИ-Б-ПМИ-21|6724",
+    }
+
+
 @app.route('/')
 def index():
     return render_template("index.html")
@@ -111,6 +125,15 @@ def corpus():
 
     # return jsonify(corpuses)
     return corpuses
+
+
+@app.route('/loadgroup', methods=["GET", "POST"])
+def loadgroup():
+    # group_name = request.json.get('groupname')
+    group_name = "Б-ПМИ-21"
+    group_data = groups.get(group_name)
+    return jsonify({'data': group_data})
+# group_data if group_data else f"No data found for group {group_name}"
 
 
 HOST_PORT = "8000"
