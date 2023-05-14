@@ -3,12 +3,33 @@
   <head>
     <meta charset="utf-8" />
     <title>Расписание занятий</title>
+    <style>
+      table {
+        border: 4px solid #000;
+        border-collapse: collapse;
+        margin: 0 auto;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #000;
+        text-align: center;
+      }
+      th {
+        background-color: #ccc;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+    </style>
   </head>
   <body>
     {% for group, lessons in data.items() %}
     <h1>{{ group }}</h1>
     <table>
       <tr>
+        <th>ИД группы</th>
         <th>№ пары</th>
         <th>День недели</th>
         <th>Время</th>
@@ -19,6 +40,7 @@
       </tr>
       {% for lesson in lessons %}
       <tr>
+        <td>{{ lesson['ИД группы'] }}</td>
         <td>{{ lesson['номер пары'] }}</td>
         <td>{{ lesson['день недели'] }}</td>
         <td>{{ lesson['временной отрезок'] }}</td>
@@ -26,8 +48,8 @@
         <td>{{ lesson['ФИО преподавателя'] }}</td>
         <td>{{ lesson['вид деятельности'] }}</td>
         <td>{{ lesson['номер аудитории'] }}</td>
-        <td>{{ lesson['код курса и уровня обучения'] }}</td>
-        <td>{{ lesson['год, семестр'] }}</td>
+        <!-- <td>{{ lesson['код курса и уровня обучения'] }}</td>
+        <td>{{ lesson['год, семестр'] }}</td> -->
       </tr>
       {% endfor %}
     </table>

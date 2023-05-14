@@ -66,6 +66,8 @@ def schedule_parse():
     file.save('static/' + file.filename)
     fac = "ИМИ"
     schedule = {}
+    lecturers = requests.get(url="http://localhost:8000/lecturers").json()
+    print(lecturers)
 
     if file:
         wb = load_workbook(filename='static/' + file.filename)
@@ -81,46 +83,55 @@ def schedule_parse():
             if course == "None" and year_and_semestr == "None":
                 continue
 
-            for row in ws.iter_rows():
-                if row[0].value == "Суббота":
-                    max_row = row[0].row
-
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
-                group_name = (ws.cell(row=4, column=i).value, ws.title)
+                group_name = (
+                    str(ws.cell(row=4, column=i).value).strip(), ws.title)
+                group = query(action="loadgroup", groupname=group_name[0])
+                group_id = group[group.find("|") + 1:]
 
                 if group_name[0] != "**" and group_name[0] != "*":
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
                         lesson = {}
                         if ws.cell(row=j, column=1).value is not None:
-                            weekday = ws.cell(row=j, column=1).value
+                            weekday = ws.cell(
+                                row=j, column=1).value.strip().upper()
 
                         # проверка, что дисциплина есть (наличие пары)
                         if ws.cell(row=j, column=i).value is not None:
                             course_id, code = get_course_and_code(course)
                             year, semestr = get_year_and_semestr(
                                 year_and_semestr, group_name[0])
-                            group = query(action="loadgroup", groupname=group_name[0])
+                            time = ws.cell(row=j, column=2).value.replace(
+                                ".", ":").replace(" -- ", "-")
+                            lesson_name = ws.cell(
+                                row=j, column=i).value.strip()
+
+                            lecturer = ws.cell(row=j, column=i + 1).value
+                            # if lecturer is not None:
+                            lecturer = get_lecturers(lecturers, lecturer)
+
+                            activity = (ws.cell(row=j, column=i + 2).value, "")
+                            classroom = (
+                                str(ws.cell(row=j, column=i + 3).value).strip())
+                            if classroom == "None":
+                                classroom = ""
+                            chet = get_parity(lesson_name)
+
                             lesson = {
+                                "ИД группы": group_id,
                                 "номер пары": j - 5,
-                                "день недели": (weekday, ""),
-                                "временной отрезок": (ws.cell(row=j, column=2).value, ""),
-                                "название дисциплины": (ws.cell(row=j, column=i).value, ""),
-                                "ФИО преподавателя": (ws.cell(row=j, column=i + 1).value, ""),
-                                "вид деятельности": (ws.cell(row=j, column=i + 2).value, ""),
-                                "номер аудитории": (ws.cell(row=j, column=i + 3).value, ""),
-                                # "код курса и уровня обучения": (course_id, code),
-                                # "год, семестр": (year, semestr),
-                                "данные группы": group
+                                "день недели": weekday,
+                                "временной отрезок": time,
+                                "название дисциплины": lesson_name,
+                                "ФИО преподавателя": lecturer,
+                                "вид деятельности": activity,
+                                "номер аудитории": classroom,
                             }
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
-                            
 
-            # course_id, code = get_course_and_code(course)
-            # year, semestr = get_year_and_semestr(year_and_semestr, group_name[0])
-        # query(2902, "loadgroup", fac, )
         return render_template('schedule.html', data=schedule, zxc=(course_id, code), asd=(year, semestr))
 
     else:
@@ -138,11 +149,18 @@ def get_year_and_semestr(string, group_name):
     string2 = re.findall(r"полугодие\s+(\d+)\s*-\s*", string)
     if string2:
         year = string2[0][-4:]
-        # group_year = int(group_name[-2:])
-        # year = current_year - group_year
     else:
         year = "Год не определен. Проверьте формат файла!"
     return (year, semestr)
+
+
+def get_parity(lesson):
+    if lesson.endswith("**"):
+        return 2
+    elif lesson.endswith("*"):
+        return 1
+    else:
+        return 0
 
 
 def get_course_and_code(course):
@@ -170,22 +188,94 @@ def get_course_and_code(course):
     return (course_id, code)
 
 
-def get_corpus():
-    url = "http://localhost:80/corpus"
-    response = requests.get(url)
-    return response.text
+def get_activity():
+    pass
 
 
-def query(id=None, action=None, fac=None,  code=None, course=None, form=None,
-          semestr=None, year=None, filename=None, id_group=None, groupname=None, full=None):
-    # добавление строки
-    if action == 'addrow':
+def get_lecturers(lecturers, lecturer):
+    if lecturer is None:
+        return ""
+    # response = requests.get(url="http://localhost:8000/lecturers")
+    surname, initials = lecturer.split()
+
+    # Получаем первую букву отчества
+    initials = initials.replace(".", "")
+
+    # Ищем совпадение фамилии в словаре
+    for key, value in lecturers.items():
+        if value.startswith(surname):
+            # Получаем инициалы из значения словаря
+            string = value.split()
+            lecturer_initials = string[1][0] + string[2][0]
+
+            # Проверяем совпадение инициалов
+            if initials == lecturer_initials:
+                # Нашли совпадение, выводим ключ и значение
+                return (key + "|" + value)
+            else:
+                return "Преподаватель не найден!"
+
+
+# Add a new row
+def add_new_row(lesson):
+    pass
+
+
+# make schedule public
+def deploy_schedule():
+    pass
+
+
+# returns set of tuples
+def get_current_schedule():
+    pass
+
+
+def get_new_schdeule(excel_schedule):
+    current = get_current_schedule()
+    all_schedule = set(excel_schedule)
+    return list(current - all_schedule)
+
+
+def add_schedule(excel_schedule):
+    to_be_added = get_new_schdeule(excel_schedule)
+    for lesson in to_be_added:
+        add_new_row(lesson)
+    deploy_schedule()
+
+
+def query(id=None, action=None, fac=None,
+          code=None, course=None, form=None,
+          semestr=None, year=None, filename=None,
+          id_group=None, groupname=None, full=None,
+          chet=None, weekday=None, activity=None,
+          corpus=None, classroom=None, lesson=None,
+          lecturer=None):
+    # вставка строки
+    if action == 'insertrow':
         type = "POST"
         url = "ajax.php"
         data = {
             'id': id,
             'action': action,
-            'full': full,
+            'id_group': id_group,
+            "filename": filename,
+            "global_semestr": semestr,
+            "semestr": (course-1) * 2 + semestr,
+            "course": course,
+            "fac": fac,
+            "year": year,
+            "B": weekday,
+            "chet": chet,
+            "F": activity,
+            "c": "02.08.2017",
+            "d": "01.08.2017",
+            # "Акинин Михаил Александрович | 895035670"
+            "J": lecturer,
+            "hours": lecturer,
+            "dis": lesson,
+            "L": corpus,
+            "K": classroom
         }
 
     # удаление строки
@@ -271,35 +361,7 @@ def query(id=None, action=None, fac=None,  code=None, course=None, form=None,
         }
 
     response = requests.post(url="http://localhost:8000/loadgroup", data=data)
-    return response
-
-
-# Add a new row
-def add_new_row(lesson):
-    pass
-
-
-# make schedule public
-def deploy_schedule():
-    pass
-
-
-# returns set of tuples
-def get_current_schedule():
-    pass
-
-
-def get_new_schdeule(excel_schedule):
-    current = get_current_schedule()
-    all_schedule = set(excel_schedule)
-    return list(current - all_schedule)
-
-
-def add_schedule(excel_schedule):
-    to_be_added = get_new_schdeule(excel_schedule)
-    for lesson in to_be_added:
-        add_new_row(lesson)
-    deploy_schedule()
+    return response.text
 
 
 HOST_PORT = "5000"
