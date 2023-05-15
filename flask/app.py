@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, make_response
 import requests
 import re
 from openpyxl import load_workbook
@@ -43,8 +43,12 @@ def authorize():
         'Login': ''
     }
 
+    cookies = {
+        "entersite": "www.s-vfu.ru",
+    }
+
     session = requests.Session()
-    res = session.post(url, data=data, verify=False)
+    res = session.post(url, data=data, cookies=cookies, verify=False)
     res.raise_for_status()
     right_index = res.text.find("<h1>") + 4
     left_index = res.text.find("</h1>")
@@ -57,17 +61,23 @@ def authorize():
         right_index = res.text.find("<strong>Ошибка!</strong>")
         left_index = res.text.find("авторизация,") + 11
         name = "Ошибка авторизации! Неверные логин и/или пароль"
-    return render_template('main.html', res=res, session=session, name=name, title=title)
+        return redirect(url_for('main'), error=name)
+    res = session.get("https://www.s-vfu.ru/user/rasp/new/")
+    index = res.text.find("buid") 
+    # session['buid'] = res.text[index + 12:index + 16]
+    buid = res.text[index + 13:index + 17]
+    return render_template('main.html', res=res, buid=buid, session=session, name=name, title=title)
 
 
-@app.route("/schedule", methods=['POST'])
+@app.route("/schedule", methods=['GET', 'POST'])
 def schedule_parse():
     file = request.files['file']
     file.save('static/' + file.filename)
     fac = "ИМИ"
     schedule = {}
     lecturers = requests.get(url="http://localhost:8000/lecturers").json()
-    print(lecturers)
+    # print(lecturers)
+    buid = request.args.get('buid')
 
     if file:
         wb = load_workbook(filename='static/' + file.filename)
@@ -132,7 +142,7 @@ def schedule_parse():
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
 
-        return render_template('schedule.html', data=schedule, zxc=(course_id, code), asd=(year, semestr))
+        return render_template('schedule.html', buid=buid, data=schedule, zxc=(course_id, code), asd=(year, semestr))
 
     else:
         error = "Ошибка при загрузке файла"
