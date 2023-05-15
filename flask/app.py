@@ -1,9 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask import Flask, render_template, request, redirect, url_for, session
 import requests
 import re
 from openpyxl import load_workbook
 
 app = Flask(__name__)
+app.secret_key = 'mysecretkey'
+# buid = None
+
+# rm.kylatchanov@empl.s-vfu.ru
+# 25041955
 
 
 @app.route('/step_one')
@@ -47,8 +52,8 @@ def authorize():
         "entersite": "www.s-vfu.ru",
     }
 
-    session = requests.Session()
-    res = session.post(url, data=data, cookies=cookies, verify=False)
+    my_session = requests.Session()
+    res = my_session.post(url, data=data, cookies=cookies, verify=False)
     res.raise_for_status()
     right_index = res.text.find("<h1>") + 4
     left_index = res.text.find("</h1>")
@@ -63,10 +68,12 @@ def authorize():
         name = "Ошибка авторизации! Неверные логин и/или пароль"
         return redirect(url_for('main'), error=name)
     res = session.get("https://www.s-vfu.ru/user/rasp/new/")
-    index = res.text.find("buid") 
-    # session['buid'] = res.text[index + 12:index + 16]
+    index = res.text.find("buid")
     buid = res.text[index + 13:index + 17]
-    return render_template('main.html', res=res, buid=buid, session=session, name=name, title=title)
+    session['buid'] = buid
+    # session.cookies.set('buid', buid)
+    return render_template('main.html', buid=buid, res=res, session=session, name=name, title=title)
+    # return redirect(url_for('schedule_parse'))
 
 
 @app.route("/schedule", methods=['GET', 'POST'])
@@ -75,11 +82,12 @@ def schedule_parse():
     file.save('static/' + file.filename)
     fac = "ИМИ"
     schedule = {}
-    lecturers = requests.get(url="http://localhost:8000/lecturers").json()
     # print(lecturers)
-    buid = request.args.get('buid')
+    # buid = request.args.get('buid')
 
     if file:
+        lecturers = requests.get(url="http://localhost:8000/lecturers").json()
+        buid = session.get('buid', 'ошибка')
         wb = load_workbook(filename='static/' + file.filename)
         sheets_names = wb.sheetnames
 
