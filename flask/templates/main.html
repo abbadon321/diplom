@@ -29,7 +29,8 @@
         margin-bottom: 10px;
         font-weight: bold;
       }
-      input[type="file"] {
+      input[type="file"],
+      select {
         display: block;
         margin-bottom: 20px;
         background-color: #fff;
@@ -63,6 +64,17 @@
     {% else %}
     <h1>{{ name }}</h1>
     <form action="/schedule" method="post" enctype="multipart/form-data">
+      <!-- Форма обучения: -->
+      <select name="form" id="studyform">
+        <option value="1|очная">Очная</option>
+        <option value="7|очно-заочная">Очно-заочная</option>
+        <option value="2|заочная">заочная</option>
+      </select>
+      <select name="fac" id="fac">
+        <option value="ИМИ">ИМИ</option>
+        <option value="ФЛФ">ФЛФ</option>
+        <option value="ФТИ">ФТИ</option>
+      </select>
       <input
         type="file"
         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"

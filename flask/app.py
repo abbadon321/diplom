@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 import requests
 import re
 from openpyxl import load_workbook
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 app.secret_key = 'mysecretkey'
@@ -11,19 +12,9 @@ app.secret_key = 'mysecretkey'
 # 25041955
 
 
-@app.route('/step_one')
-def step_one():
-    return render_template("step_one.html")
-
-
 @app.route('/test')
 def test():
     return render_template("test.html")
-
-
-@app.route('/step_two')
-def step_two():
-    return render_template("step_two.html")
 
 
 @app.route('/')
@@ -67,7 +58,7 @@ def authorize():
         left_index = res.text.find("авторизация,") + 11
         name = "Ошибка авторизации! Неверные логин и/или пароль"
         return redirect(url_for('main'), error=name)
-    res = session.get("https://www.s-vfu.ru/user/rasp/new/")
+    res = my_session.get("https://www.s-vfu.ru/user/rasp/new/")
     index = res.text.find("buid")
     buid = res.text[index + 13:index + 17]
     session['buid'] = buid
@@ -80,12 +71,11 @@ def authorize():
 def schedule_parse():
     file = request.files['file']
     file.save('static/' + file.filename)
-    fac = "ИМИ"
+    form = request.form.get('form')
+    fac = request.form.get('fac')
     schedule = {}
-    # print(lecturers)
-    # buid = request.args.get('buid')
 
-    if file:
+    if file & fac & form:
         lecturers = requests.get(url="http://localhost:8000/lecturers").json()
         buid = session.get('buid', 'ошибка')
         wb = load_workbook(filename='static/' + file.filename)
@@ -100,34 +90,40 @@ def schedule_parse():
             year_and_semestr = str(ws.cell(row=1, column=1).value)
             if course == "None" and year_and_semestr == "None":
                 continue
+            course_id, code = get_course_and_code(course)
+            year, semestr = get_year_and_semestr(
+                year_and_semestr, group_name[0])
 
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
+                # получение названия группы
                 group_name = (
                     str(ws.cell(row=4, column=i).value).strip(), ws.title)
-                group = query(action="loadgroup", groupname=group_name[0])
+                # получение списка подходящих групп
+                response = query(id=buid, action="loadgroup", fac=fac, code=code,
+                                 course=course_id, form=form, semestr=semestr, year=year)
+                # получение нужной группы из списка
+                group = parse_loadgroup(response, group_name[0])
+                # получение id группы
                 group_id = group[group.find("|") + 1:]
 
                 if group_name[0] != "**" and group_name[0] != "*":
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
                         lesson = {}
-                        if ws.cell(row=j, column=1).value is not None:
-                            weekday = ws.cell(
-                                row=j, column=1).value.strip().upper()
+                        # получение дня недели
+                        weekday = ws.cell(
+                            row=j, column=1).value.strip().upper()
 
                         # проверка, что дисциплина есть (наличие пары)
                         if ws.cell(row=j, column=i).value is not None:
-                            course_id, code = get_course_and_code(course)
-                            year, semestr = get_year_and_semestr(
-                                year_and_semestr, group_name[0])
                             time = ws.cell(row=j, column=2).value.replace(
                                 ".", ":").replace(" -- ", "-")
                             lesson_name = ws.cell(
                                 row=j, column=i).value.strip()
 
                             lecturer = ws.cell(row=j, column=i + 1).value
-                            # if lecturer is not None:
+                            # ПРОДОЛЖИ ЗДЕСЬ
                             lecturer = get_lecturers(lecturers, lecturer)
 
                             activity = (ws.cell(row=j, column=i + 2).value, "")
@@ -234,32 +230,32 @@ def get_lecturers(lecturers, lecturer):
                 return "Преподаватель не найден!"
 
 
-# Add a new row
-def add_new_row(lesson):
-    pass
+# # Add a new row
+# def add_new_row(lesson):
+#     pass
 
 
-# make schedule public
-def deploy_schedule():
-    pass
+# # make schedule public
+# def deploy_schedule():
+#     pass
 
 
-# returns set of tuples
-def get_current_schedule():
-    pass
+# # returns set of tuples
+# def get_current_schedule():
+#     pass
 
 
-def get_new_schdeule(excel_schedule):
-    current = get_current_schedule()
-    all_schedule = set(excel_schedule)
-    return list(current - all_schedule)
+# def get_new_schdeule(excel_schedule):
+#     current = get_current_schedule()
+#     all_schedule = set(excel_schedule)
+#     return list(current - all_schedule)
 
 
-def add_schedule(excel_schedule):
-    to_be_added = get_new_schdeule(excel_schedule)
-    for lesson in to_be_added:
-        add_new_row(lesson)
-    deploy_schedule()
+# def add_schedule(excel_schedule):
+#     to_be_added = get_new_schdeule(excel_schedule)
+#     for lesson in to_be_added:
+#         add_new_row(lesson)
+#     deploy_schedule()
 
 
 def query(id=None, action=None, fac=None,
@@ -268,14 +264,12 @@ def query(id=None, action=None, fac=None,
           id_group=None, groupname=None, full=None,
           chet=None, weekday=None, activity=None,
           corpus=None, classroom=None, lesson=None,
-          lecturer=None):
+          lecturer=None, time=None):
     # вставка строки
     if action == 'insertrow':
         type = "POST"
         url = "ajax.php"
         data = {
-            'id': id,
-            'action': action,
             'id_group': id_group,
             "filename": filename,
             "global_semestr": semestr,
@@ -283,15 +277,21 @@ def query(id=None, action=None, fac=None,
             "course": course,
             "fac": fac,
             "year": year,
-            "B": weekday,
-            "chet": chet,
-            "F": activity,
-            "c": "02.08.2017",
-            "d": "01.08.2017",
-            # "Акинин Михаил Александрович | 895035670"
+            "form": "03",
+            "formshort": 1,
+            'id': id,
+            'action': action,
+            'I': lesson,
+            # "Акинин Михаил Александрович|895035670"
             "J": lecturer,
             "hours": lecturer,
-            "dis": lesson,
+            'poggruppa': 0,
+            "B": weekday,
+            "F": time,
+            "chet": chet,
+            "c": "09.01.2023",
+            "d": "30.06.2023",
+            "H": activity,
             "L": corpus,
             "K": classroom
         }
@@ -347,20 +347,17 @@ def query(id=None, action=None, fac=None,
 
     # выбрать группу
     elif action == 'loadgroup':
-        # type = "POST"
-        # url = "ajax.php"
-        # data = {
-        #     'id': id,
-        #     'action': action,
-        #     "fac": fac,
-        #     "code": code,
-        #     "course": course,
-        #     "form": form,
-        #     "semestr": semestr,
-        #     "year": year
-        # }
+        type = "POST"
+        url = "ajax.php"
         data = {
-            "groupname": groupname
+            'id': id,
+            'action': action,
+            "fac": fac,
+            "code": code,
+            "course": course,
+            "form": form,
+            "semestr": semestr,
+            "year": year
         }
 
     # выбрать руп
@@ -380,6 +377,18 @@ def query(id=None, action=None, fac=None,
 
     response = requests.post(url="http://localhost:8000/loadgroup", data=data)
     return response.text
+
+
+def parse_loadgroup(html, groupname):
+    soup = BeautifulSoup(html, 'html.parser')
+    select = soup.find('select')
+    if select:
+        options = select.find_all('option')
+        for option in options:
+            value = option.get('value')
+            if value and groupname in value:
+                return value
+    return None
 
 
 HOST_PORT = "5000"
