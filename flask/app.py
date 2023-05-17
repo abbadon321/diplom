@@ -86,11 +86,10 @@ def schedule_parse():
             wb.active = sheets_names.index(sh)
             ws = wb.active
 
-            course = str(ws.cell(row=2, column=1).value)
+            course = str(ws.cell(row=2, column=1).value).strip()[0]
             year_and_semestr = str(ws.cell(row=1, column=1).value)
             if course == "None" and year_and_semestr == "None":
                 continue
-            course_id, code = get_course_and_code(course)
             year, semestr = get_year_and_semestr(
                 year_and_semestr, group_name[0])
 
@@ -99,13 +98,20 @@ def schedule_parse():
                 # получение названия группы
                 group_name = (
                     str(ws.cell(row=4, column=i).value).strip(), ws.title)
+                # получения кода для формы обучения
+                code = get_code(group_name)
                 # получение списка подходящих групп
                 response = query(id=buid, action="loadgroup", fac=fac, code=code,
-                                 course=course_id, form=form, semestr=semestr, year=year)
+                                 course=course, form=form, semestr=semestr, year=year)
                 # получение нужной группы из списка
                 group = parse_loadgroup(response, group_name[0])
                 # получение id группы
                 group_id = group[group.find("|") + 1:]
+
+                # получение РУПа
+                # ПОЧЕМУ PLAN И FILENAME В КОНЕЧНОМ ИТОГЕ РАЗНЫЕ
+                filename = query(id=buid, action="choicerup",
+                                 fac=fac, course=course, form=form, semestr=semestr, year=year, groupname=group)
 
                 if group_name[0] != "**" and group_name[0] != "*":
                     # цикл по занятиям одной группы
@@ -122,9 +128,12 @@ def schedule_parse():
                             lesson_name = ws.cell(
                                 row=j, column=i).value.strip()
 
-                            lecturer = ws.cell(row=j, column=i + 1).value
-                            # ПРОДОЛЖИ ЗДЕСЬ
-                            lecturer = get_lecturers(lecturers, lecturer)
+                            lecturer = str(
+                                ws.cell(row=j, column=i + 1).value).split('\n')
+
+                            # if len(lecturer) > 1:
+                            #     for i in range(len(lecturer)):
+                            #         lecturer = get_lecturers(lecturer)
 
                             activity = (ws.cell(row=j, column=i + 2).value, "")
                             classroom = (
@@ -146,7 +155,7 @@ def schedule_parse():
                             schedule.setdefault(
                                 group_name[0], []).append(lesson)
 
-        return render_template('schedule.html', buid=buid, data=schedule, zxc=(course_id, code), asd=(year, semestr))
+        return render_template('schedule.html', buid=buid, data=schedule, zxc=(course, code), asd=(year, semestr))
 
     else:
         error = "Ошибка при загрузке файла"
@@ -177,58 +186,19 @@ def get_parity(lesson):
         return 0
 
 
-def get_course_and_code(course):
-    course_id = 0
-    code = 0
-    string = course.replace(" ", "").upper()
-    if string == "1КУРС":
-        course_id = 1
-        code = 3
-    elif string == "2КУРС":
-        course_id = 2
-        code = 3
-    elif string == "3КУРС":
-        course_id = 3
-        code = 3
-    elif string == "4КУРС":
-        course_id = 4
-        code = 3
-    elif string == "1КУРСМАГИСТРАТУРЫ":
-        course_id = 1
-        code = 4
-    elif string == "2КУРСМАГИСТРАТУРЫ":
-        course_id = 2
-        code = 4
-    return (course_id, code)
+def get_code(group_name):
+    string = group_name.strip()[0].upper()
+    if string == "Б":
+        return 3
+    elif string == "М":
+        return 4
+    elif string == "А":
+        return 6
+    return 5
 
 
 def get_activity():
     pass
-
-
-def get_lecturers(lecturers, lecturer):
-    if lecturer is None:
-        return ""
-    # response = requests.get(url="http://localhost:8000/lecturers")
-    surname, initials = lecturer.split()
-
-    # Получаем первую букву отчества
-    initials = initials.replace(".", "")
-
-    # Ищем совпадение фамилии в словаре
-    for key, value in lecturers.items():
-        if value.startswith(surname):
-            # Получаем инициалы из значения словаря
-            string = value.split()
-            lecturer_initials = string[1][0] + string[2][0]
-
-            # Проверяем совпадение инициалов
-            if initials == lecturer_initials:
-                # Нашли совпадение, выводим ключ и значение
-                return (key + "|" + value)
-            else:
-                return "Преподаватель не найден!"
-
 
 # # Add a new row
 # def add_new_row(lesson):
@@ -265,6 +235,19 @@ def query(id=None, action=None, fac=None,
           chet=None, weekday=None, activity=None,
           corpus=None, classroom=None, lesson=None,
           lecturer=None, time=None):
+    # добавление строки
+    if action == 'addrow':
+        type = "POST"
+        url = "ajax.php"
+        last_index = str(groupname).rfind("|")
+        # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
+        # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
+        data = fac + "|" + filename + "|" + \
+            groupname[:last_index] + "|" + code + "|" + course + \
+            "|" + year + "|1|" + \
+            groupname[last_index:len(groupname)] + "|03|" + \
+            groupname[last_index:len(groupname)] + "|1"
+
     # вставка строки
     if action == 'insertrow':
         type = "POST"
@@ -389,6 +372,41 @@ def parse_loadgroup(html, groupname):
             if value and groupname in value:
                 return value
     return None
+
+
+def parse_choicerup(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    radiobuttons = soup.find_all('input', {'type': 'radio'})
+
+    selected_value = None
+    for radiobutton in radiobuttons:
+        if radiobutton.has_attr('checked'):
+            selected_value = radiobutton['value']
+            break
+
+    return selected_value
+
+
+def parse_addrow(html, lecturer):
+    soup = BeautifulSoup(html, 'html.parser')
+    options = soup.find_all('option')
+
+    surname, initials = lecturer.split()
+    initials = initials.replace(".", "")
+
+    for option in options:
+        text = option.text
+        if text.startwith(surname):
+            string = text.split()
+            lecturer_initials = string[1][0] + string[2][0]
+            if initials == lecturer_initials:
+                return text + "|" + option['value']
+
+    else:
+        # есть проблема совпадений по фамилии и инициалам а также полных тесок
+        response = requests.get(
+            url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
+        data = response.json()
 
 
 HOST_PORT = "5000"
