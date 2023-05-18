@@ -127,20 +127,26 @@ def schedule_parse():
                                 ".", ":").replace(" -- ", "-")
                             lesson_name = ws.cell(
                                 row=j, column=i).value.strip()
+                            
+                            chet = get_parity(lesson_name)
 
-                            lecturer = str(
+                            lecturer_name = str(
                                 ws.cell(row=j, column=i + 1).value).split('\n')
+                            
+                            # if len(lecturer_name) > 1:
+                            #     for i in range(len(lecturer_name)):
+                            #         lecturer = get_lecturers(lecturer_name)
 
-                            # if len(lecturer) > 1:
-                            #     for i in range(len(lecturer)):
-                            #         lecturer = get_lecturers(lecturer)
-
+                            response = query(action="addrow", fac=fac, filename=filename, groupname=group, code=code, course=course, year=year)
+                            # получение данных проподователя с сервера
+                            lecturer = parse_addrow(response, lecturer_name)
+                            
                             activity = (ws.cell(row=j, column=i + 2).value, "")
+
                             classroom = (
                                 str(ws.cell(row=j, column=i + 3).value).strip())
                             if classroom == "None":
                                 classroom = ""
-                            chet = get_parity(lesson_name)
 
                             lesson = {
                                 "ИД группы": group_id,
@@ -239,17 +245,20 @@ def query(id=None, action=None, fac=None,
     if action == 'addrow':
         type = "POST"
         url = "ajax.php"
+        id = 1
         last_index = str(groupname).rfind("|")
         # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
         # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
-        data = fac + "|" + filename + "|" + \
+        data = {"id": id,
+                "full": fac + "|" + filename + "|" + \
             groupname[:last_index] + "|" + code + "|" + course + \
             "|" + year + "|1|" + \
             groupname[last_index:len(groupname)] + "|03|" + \
             groupname[last_index:len(groupname)] + "|1"
+        }
 
     # вставка строки
-    if action == 'insertrow':
+    if action == 'insertrow':        
         type = "POST"
         url = "ajax.php"
         data = {
@@ -396,7 +405,7 @@ def parse_addrow(html, lecturer):
 
     for option in options:
         text = option.text
-        if text.startwith(surname):
+        if text.startswith(surname):
             string = text.split()
             lecturer_initials = string[1][0] + string[2][0]
             if initials == lecturer_initials:
@@ -407,6 +416,13 @@ def parse_addrow(html, lecturer):
         response = requests.get(
             url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
         data = response.json()
+        for d in data:
+            string = d.split()
+            if string[2].startswith(initials[1]):
+                return d
+            else: 
+                "Преподаватель не найден!"
+                
 
 
 HOST_PORT = "5000"

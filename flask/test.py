@@ -1,10 +1,71 @@
-import requests
-surname = "Попов"
-initials = "ВА"
-response = requests.get(
-    url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
-data = response.json()
-print(type(data))
+# from bs4 import BeautifulSoup
+# import requests
+
+# def parse_addrow(html, lecturer):
+#     soup = BeautifulSoup(html, 'html.parser')
+#     options = soup.find_all('option')
+
+#     surname, initials = lecturer.split()
+#     initials = initials.replace(".", "")
+
+#     for option in options:
+#         text = option.text
+#         if text.startswith(surname):
+#             string = text.split()
+#             lecturer_initials = string[1][0] + string[2][0]
+#             if initials == lecturer_initials:
+#                 return text + "|" + option['value']
+
+#     else:
+#         # есть проблема совпадений по фамилии и инициалам а также полных тесок
+#         response = requests.get(
+#             url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
+#         data = response.json()
+#         for d in data:
+#             string = d.split()
+#             if string[2].startswith(initials[1]):
+#                 return d
+#             else: "Преподаватель не найден!"
+
+
+# html = '<select name="hours"><option value=""></option><option value="895038073">Акимов Федор Револьевич</option><option value="714069">Алексеев Николай Кириллович</option><option value="90258224">Божевольная Зоя Анатольевна</option><option value="895038074">Варламова Анастасия Гаврииловна</option><option value="895035721">Васильева Лира Петровна</option><option value="895035612">Габышева Анна Михайловна</option><option value="895038096">Герасимов Георгий Егорович</option><option value="895038199">Голоков Вячеслав Валерьевич</option><option value="717477">Дедюкина Любовь Лукинична</option><option value="717689">Донская Маргарита Ивановна</option><option value="718121">Егорова Валентина Никифоровна</option><option value="219536635">Ефимова Кристина Семеновна</option><option value="718509">Жафяров Акрям Жафярович</option></select>'
+# lecturer = "Попов В.В."
+
+# print(parse_addrow(html, lecturer))
+
+from openpyxl import load_workbook
+
+wb = load_workbook(filename='C:\\Users\\user\\Documents\\GitHub\\diplom\\flask\\static\\тест.xlsx')
+sheets_names = wb.sheetnames
+
+# цикл по листам excel-файла
+for sh in sheets_names:
+    wb.active = sheets_names.index(sh)
+    ws = wb.active
+    print(ws.title)
+    for i in range(3, ws.max_column, 4):
+        for j in range(6, 42):
+            # if str(ws.cell(row=j, column=i).value).find("*,**") != -1:
+            if str(ws.cell(row=j, column=i).value).find("*") != -1:
+                print(ws.cell(row=j, column=i).value)
+                print( (ws.cell(row=j, column=i).value.strip()))
+                print()
+                # print((ws.cell(row=j, column=i).value.strip()).split())
+                # print(j, " ",(ws.cell(row=j, column=i).value.strip()))
+
+# import requests
+# surname = "Попов"
+# initials = "ВВ"
+# response = requests.get(
+#     url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
+# data = response.json()
+# # print(data)
+# for d in data:
+#     string = d.split()
+#     if string[2].startswith(initials[1]):
+#         print(d)
+    
+
 
 # from bs4 import BeautifulSoup
 
