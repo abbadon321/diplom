@@ -1,3 +1,6 @@
+group = "02.03.02|7471|ИМИ-Б-ФИИТ-21|5998"
+print(group[3:5])
+
 # from bs4 import BeautifulSoup
 # import requests
 
@@ -33,24 +36,58 @@
 
 # print(parse_addrow(html, lecturer))
 
-from openpyxl import load_workbook
+# lecturer = "Акинин Михаил Александрович|895035670"
+# print(lecturer[lecturer.find("|") + 1:])
 
-wb = load_workbook(filename='C:\\Users\\user\\Documents\\GitHub\\diplom\\flask\\static\\тест.xlsx')
-sheets_names = wb.sheetnames
+# from openpyxl import load_workbook
+# import re
 
-# цикл по листам excel-файла
-for sh in sheets_names:
-    wb.active = sheets_names.index(sh)
-    ws = wb.active
-    print(ws.title)
-    for i in range(3, ws.max_column, 4):
-        for j in range(6, 42):
+# wb = load_workbook(filename='C:\\Users\\user\\Documents\\GitHub\\diplom\\flask\\static\\тест.xlsx')
+# sheets_names = wb.sheetnames
+# wb.active = sheets_names.index("1 курс_МО")
+# ws = wb.active
+# print(ws.title)
+# text = str(ws.cell(row=27, column=4).value).split("\n")
+# print(text)
+# s = None
+# if str(s) == "None":
+#     print("yes")
+
+
+# def extract_word(string):
+#     # Паттерн для поиска числа и слова
+#     pattern = r'\b(\d+)\b\s+([a-zA-Zа-яА-Я]{2,})\b'
+    
+#     # Ищем совпадения в строке
+#     match = re.search(pattern, string)
+    
+#     if match is not None:
+#         # Возвращаем слово из совпадения
+#         return match.group(2)
+#     else:
+#         return None
+
+# # цикл по листам excel-файла
+# for sh in sheets_names:
+#     wb.active = sheets_names.index(sh)
+#     ws = wb.active
+#     print("\n", ws.title)
+#     text = str(ws.cell(row=3, column=6).value).split("\n")
+#     print(text)
+#     for i in range(6, ws.max_column, 4):
+#         for j in range(6, 42):
+#             if ws.cell(row=j, column=i).value is not None:
+#                 string = str(ws.cell(row=j, column=i).value)
+#                 result = extract_word(string) if (result := extract_word(string)) is not None else "КФЕН"
+#                 print(result, end=", ")
+
+                
             # if str(ws.cell(row=j, column=i).value).find("*,**") != -1:
-            if str(ws.cell(row=j, column=i).value).find("*") != -1:
-                print(ws.cell(row=j, column=i).value)
-                print( (ws.cell(row=j, column=i).value.strip()))
-                print()
-                # print((ws.cell(row=j, column=i).value.strip()).split())
+            # if str(ws.cell(row=j, column=i).value).find("*") != -1:
+            #     print(ws.cell(row=j, column=i).value)
+            #     print( (ws.cell(row=j, column=i).value.strip()))
+            #     print()
+            #     # print((ws.cell(row=j, column=i).value.strip()).split())
                 # print(j, " ",(ws.cell(row=j, column=i).value.strip()))
 
 # import requests

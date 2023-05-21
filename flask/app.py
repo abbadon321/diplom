@@ -57,7 +57,7 @@ def authorize():
         right_index = res.text.find("<strong>Ошибка!</strong>")
         left_index = res.text.find("авторизация,") + 11
         name = "Ошибка авторизации! Неверные логин и/или пароль"
-        return redirect(url_for('main'), error=name)
+        return redirect(url_for('index'))
     res = my_session.get("https://www.s-vfu.ru/user/rasp/new/")
     index = res.text.find("buid")
     buid = res.text[index + 13:index + 17]
@@ -75,14 +75,16 @@ def schedule_parse():
     fac = request.form.get('fac')
     schedule = {}
 
-    if file & fac & form:
-        lecturers = requests.get(url="http://localhost:8000/lecturers").json()
+    if file and fac and form:
+        # lecturers = requests.get(url="http://localhost:8000/lecturers").json()
         buid = session.get('buid', 'ошибка')
         wb = load_workbook(filename='static/' + file.filename)
         sheets_names = wb.sheetnames
 
         # цикл по листам excel-файла
         for sh in sheets_names:
+            if sh.find("курс") == -1:
+                continue
             wb.active = sheets_names.index(sh)
             ws = wb.active
 
@@ -90,21 +92,21 @@ def schedule_parse():
             year_and_semestr = str(ws.cell(row=1, column=1).value)
             if course == "None" and year_and_semestr == "None":
                 continue
-            year, semestr = get_year_and_semestr(
-                year_and_semestr, group_name[0])
+           
 
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
                 # получение названия группы
-                group_name = (
-                    str(ws.cell(row=4, column=i).value).strip(), ws.title)
+                group_name = str(ws.cell(row=4, column=i).value).strip()
+                year, semestr = get_year_and_semestr(year_and_semestr)
+
                 # получения кода для формы обучения
                 code = get_code(group_name)
                 # получение списка подходящих групп
                 response = query(id=buid, action="loadgroup", fac=fac, code=code,
                                  course=course, form=form, semestr=semestr, year=year)
                 # получение нужной группы из списка
-                group = parse_loadgroup(response, group_name[0])
+                group = parse_loadgroup(response, group_name)
                 # получение id группы
                 group_id = group[group.find("|") + 1:]
 
@@ -113,7 +115,7 @@ def schedule_parse():
                 filename = query(id=buid, action="choicerup",
                                  fac=fac, course=course, form=form, semestr=semestr, year=year, groupname=group)
 
-                if group_name[0] != "**" and group_name[0] != "*":
+                if group_name != "**" and group_name != "*" and group_name != "None":
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
                         lesson = {}
@@ -128,6 +130,8 @@ def schedule_parse():
                             lesson_name = ws.cell(
                                 row=j, column=i).value.strip()
                             
+                            # if len(lesson_name.split("\n")) > 1:
+                            
                             chet = get_parity(lesson_name)
 
                             lecturer_name = str(
@@ -136,18 +140,21 @@ def schedule_parse():
                             # if len(lecturer_name) > 1:
                             #     for i in range(len(lecturer_name)):
                             #         lecturer = get_lecturers(lecturer_name)
-
+                            
+                            # добавление строки в таблицу
                             response = query(action="addrow", fac=fac, filename=filename, groupname=group, code=code, course=course, year=year)
+                            
                             # получение данных проподователя с сервера
                             lecturer = parse_addrow(response, lecturer_name)
                             
-                            activity = (ws.cell(row=j, column=i + 2).value, "")
+                            activity = ws.cell(row=j, column=i + 2).value
+                            activity = get_activity(activity)
 
                             classroom = (
                                 str(ws.cell(row=j, column=i + 3).value).strip())
-                            if classroom == "None":
-                                classroom = ""
-
+                            
+                            corpus = extract_corpus(classroom) if (corpus := extract_corpus(corpus)) is not None else "КФЕН"
+                            
                             lesson = {
                                 "ИД группы": group_id,
                                 "номер пары": j - 5,
@@ -159,16 +166,18 @@ def schedule_parse():
                                 "номер аудитории": classroom,
                             }
                             schedule.setdefault(
-                                group_name[0], []).append(lesson)
+                                group_name, []).append(lesson)
+                            result = query(id_group=group_id, filename=filename, semestr=semestr, course=course, fac=fac, form=form[0], action="insertrow", lesson=lesson_name, lecturer=lecturer, weekday=weekday, time=time, chet=chet, activity=activity, corpus=corpus, classroom=classroom)
+                            
 
-        return render_template('schedule.html', buid=buid, data=schedule, zxc=(course, code), asd=(year, semestr))
+        return render_template('schedule.html', buid=buid, data=schedule, res = result.text, asd=(year, semestr))
 
     else:
         error = "Ошибка при загрузке файла"
         return redirect(url_for('main'), error=error)
 
 
-def get_year_and_semestr(string, group_name):
+def get_year_and_semestr(string):
     string1 = re.findall(r"\b\d+\b(?=\s*полугодие)", string)
     if string1:
         semestr = string1[0]
@@ -203,8 +212,31 @@ def get_code(group_name):
     return 5
 
 
-def get_activity():
-    pass
+def get_activity(act):
+    act = act.replace(" ", "").replace('\\', "\n").replace('/', "\n")
+    if act == "лек":
+        return "лекция"
+    elif act == "пр":
+        return "практика"
+    elif act == "лек\nпр":
+        return "лекция, практика"
+    elif act == "лаб":
+        return "Лабораторная работа"
+    elif act == "СРС":
+        return "самостоятельная работа"
+    else: return ""
+
+def extract_corpus(string):
+    # Паттерн для поиска числа и слова
+    pattern = r'\b(\d+)\b\s+([a-zA-Zа-яА-Я]{2,})\b'
+    # Ищем совпадения в строке
+    match = re.search(pattern, string)
+    if match is not None:
+        # Возвращаем слово из совпадения
+        return match.group(2)
+    else:
+        return None
+    
 
 # # Add a new row
 # def add_new_row(lesson):
@@ -241,20 +273,20 @@ def query(id=None, action=None, fac=None,
           chet=None, weekday=None, activity=None,
           corpus=None, classroom=None, lesson=None,
           lecturer=None, time=None):
+    last_index = str(groupname).rfind("|")
     # добавление строки
     if action == 'addrow':
         type = "POST"
         url = "ajax.php"
         id = 1
-        last_index = str(groupname).rfind("|")
         # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
         # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
         data = {"id": id,
                 "full": fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + code + "|" + course + \
-            "|" + year + "|1|" + \
-            groupname[last_index:len(groupname)] + "|03|" + \
-            groupname[last_index:len(groupname)] + "|1"
+            groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + \
+            "|" + year + "|" + semestr + "|" + \
+            groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + \
+            groupname[last_index:len(groupname)] + "|" + form
         }
 
     # вставка строки
@@ -262,6 +294,12 @@ def query(id=None, action=None, fac=None,
         type = "POST"
         url = "ajax.php"
         data = {
+            "data": fac + "|" + filename + "|" + \
+            groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + \
+            "|" + year + "|" + semestr + "|" + \
+            groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + \
+            groupname[last_index:len(groupname)] + "|" + form,
+            'courseequalsemestr': 0,
             'id_group': id_group,
             "filename": filename,
             "global_semestr": semestr,
@@ -269,14 +307,14 @@ def query(id=None, action=None, fac=None,
             "course": course,
             "fac": fac,
             "year": year,
-            "form": "03",
+            "form": groupname[3:5],
             "formshort": 1,
-            'id': id,
+            'id': 1,
             'action': action,
             'I': lesson,
             # "Акинин Михаил Александрович|895035670"
             "J": lecturer,
-            "hours": lecturer,
+            "hours": lecturer[lecturer.find("|") + 1:],
             'poggruppa': 0,
             "B": weekday,
             "F": time,
@@ -312,7 +350,7 @@ def query(id=None, action=None, fac=None,
         }
 
     # публикация расписания
-    elif action == 'public':
+    elif action == 'public1':
         type = "POST"
         url = "ajax.php"
         data = {
@@ -320,6 +358,22 @@ def query(id=None, action=None, fac=None,
             'action': action,
             'full': full,
             "fac": fac
+        }
+    elif action == 'public2':
+        type = "POST"
+        url = "ajax.php"
+        data = {
+            'data': fac + "|" + filename + "|" + id_group + "|" + groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + "|" + year + "|" + semestr + "|" + groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + groupname[last_index:len(groupname)] + "|" + form,
+            'id_group': id_group,
+            'filename': filename,
+            'global_semestr': semestr,
+            'semestr': (course-1) * 2 + semestr,
+            'course': course,
+            'fac': fac,
+            'year': year,
+            'form': groupname[3:5],
+            'formshort': form[0],
+            'action': action,
         }
 
     # сохранение расписания
@@ -367,7 +421,7 @@ def query(id=None, action=None, fac=None,
             "groupname": groupname,
         }
 
-    response = requests.post(url="http://localhost:8000/loadgroup", data=data)
+    response = requests.post(url="https://www.s-vfu.ru/user/rasp/new/ajax.php", data=data)
     return response.text
 
 
