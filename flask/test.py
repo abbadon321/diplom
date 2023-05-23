@@ -4,245 +4,265 @@ import requests
 from openpyxl import load_workbook
 import re
 
-my_session = requests.Session()
+group = "02.03.02|7471|ИМИ-Б-ФИИТ-21|5998"
+group_id = group[group.find("|") + 1:]
 
-url = 'https://www.s-vfu.ru/?login=yes'
+semestr = "2"
+course = "2"
+fac = "ИМИ"
+filename = "02030201_22_2ФИИТ.plx"
+code = "3"
+year = "2022"
+form = "1"
 
-data = {
-    'AUTH_FORM': 'Y',
-    'TYPE': 'AUTH',
-    'USER_LOGIN': "rom.na",
-    'USER_PASSWORD': "CfvjqkjdFY1937",
-    'Login': ''
-}
+last_index = str(group_id).rfind("|") + 1
+full_semestr = str((int(course) - 1) * 2 + int(semestr))
+full = fac + "|" + filename + "|" + group_id[:last_index] + full_semestr + "|" + course + "|" + year + "|" + \
+    semestr + "|" + \
+    group_id[last_index:len(
+        group_id)] + "|0" + code + "|" + group_id[last_index:len(group_id)] + "|" + form[0]
 
-cookies = {
-    "entersite": "www.s-vfu.ru",
-}
+print(group_id)
 
-res = my_session.post(url, data=data, cookies=cookies, verify=False)
+# my_session = requests.Session()
 
-my_cookies = res.cookies
+# url = 'https://www.s-vfu.ru/?login=yes'
 
+# data = {
+#     'AUTH_FORM': 'Y',
+#     'TYPE': 'AUTH',
+#     'USER_LOGIN': "rom.na",
+#     'USER_PASSWORD': "CfvjqkjdFY1937",
+#     'Login': ''
+# }
 
-def parse_loadgroup(html, groupname):
-    soup = BeautifulSoup(html, 'html.parser')
-    select = soup.find('select')
-    if select:
-        options = select.find_all('option')
-        for option in options:
-            value = option.get('value')
-            if value and groupname in value:
-                return value
-    return None
+# cookies = {
+#     "entersite": "www.s-vfu.ru",
+# }
 
+# res = my_session.post(url, data=data, cookies=cookies, verify=False)
 
-def query(id=None, action=None, fac=None,
-          code=None, course=None, form=None,
-          semestr=None, year=None, filename=None,
-          id_group=None, groupname=None, full=None,
-          chet=None, weekday=None, activity=None,
-          corpus=None, classroom=None, lesson=None,
-          lecturer=None, time=None):
-
-    # добавление строки
-    if action == 'addrow':
-
-        last_index = str(groupname).rfind("|")
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        full = fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + full_semestr + "|" + course + \
-            "|" + year + "|" + semestr + "|" + \
-            groupname[last_index:len(groupname)] + "|0" + code + "|" + \
-            groupname[last_index:len(groupname)] + "|" + form
-        id = 1
-        # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
-        # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
-        data = {"id": id,
-                "full": full
-                }
-
-    # вставка строки
-    if action == 'insertrow':
-
-        last_index = str(groupname).rfind("|")
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        full = fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + full_semestr + "|" + course + \
-            "|" + year + "|" + semestr + "|" + \
-            groupname[last_index:len(groupname)] + "|0" + code + "|" + \
-            groupname[last_index:len(groupname)] + "|" + form
-
-        data = {
-            "data": full,
-            'courseequalsemestr': 0,
-            'id_group': id_group,
-            "filename": filename,
-            "global_semestr": semestr,
-            "semestr": (course-1) * 2 + semestr,
-            "course": course,
-            "fac": fac,
-            "year": year,
-            "form": groupname[3:5],
-            "formshort": 1,
-            'id': 1,
-            'action': action,
-            'I': lesson,
-            # "Акинин Михаил Александрович|895035670"
-            "J": lecturer,
-            "hours": lecturer[lecturer.find("|") + 1:],
-            'poggruppa': 0,
-            "B": weekday,
-            "F": time,
-            "chet": chet,
-            "c": "09.01.2023",
-            "d": "30.06.2023",
-            "H": activity,
-            "L": corpus,
-            "K": classroom
-        }
-
-    # удаление строки
-    elif action == 'delete':
-
-        last_index = str(groupname).rfind("|")
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        full = fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + full_semestr + "|" + course + \
-            "|" + year + "|" + semestr + "|" + \
-            groupname[last_index:len(groupname)] + "|0" + code + "|" + \
-            groupname[last_index:len(groupname)] + "|" + form
-
-        data = {
-            'id': id,
-            'action': action,
-            'full': full,
-            "fac": fac,
-            "data": id
-        }
-
-    # удаление расписания
-    elif action == 'remove':
-
-        last_index = str(groupname).rfind("|")
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        full = fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + full_semestr + "|" + course + \
-            "|" + year + "|" + semestr + "|" + \
-            groupname[last_index:len(groupname)] + "|0" + code + "|" + \
-            groupname[last_index:len(groupname)] + "|" + form
-
-        data = {
-            'id': id,
-            'action': action,
-            'full': full,
-            "fac": fac
-        }
-
-    # публикация расписания
-    elif action == 'public1':
-
-        last_index = str(groupname).rfind("|")
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        full = fac + "|" + filename + "|" + \
-            groupname[:last_index] + "|" + full_semestr + "|" + course + \
-            "|" + year + "|" + semestr + "|" + \
-            groupname[last_index:len(groupname)] + "|0" + code + "|" + \
-            groupname[last_index:len(groupname)] + "|" + form
-
-        data = {
-            'id': id,
-            'action': action,
-            'full': full,
-            "fac": fac
-        }
-    elif action == 'public2':
-
-        data = {
-            'data': fac + "|" + filename + "|" + id_group + "|" + groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + "|" + year + "|" + semestr + "|" + groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + groupname[last_index:len(groupname)] + "|" + form,
-            'id_group': id_group,
-            'filename': filename,
-            'global_semestr': semestr,
-            'semestr': (course-1) * 2 + semestr,
-            'course': course,
-            'fac': fac,
-            'year': year,
-            'form': groupname[3:5],
-            'formshort': form[0],
-            'action': action,
-        }
-
-    # сохранение расписания
-    elif action == 'apply':
-
-        data = {
-            'id': id,
-            'action': action,
-            'filename': filename,
-            "course": course,
-            "id_group": id_group,
-            "semestr": semestr,
-            "year": year,
-            "fac": fac
-        }
-
-    # выбрать группу
-    elif action == 'loadgroup':
-
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "code": code,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year
-        }
-
-    # выбрать руп
-    elif action == 'choicerup':
-
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year,
-            "groupname": groupname,
-        }
-
-    response = my_session.post(
-        url="https://www.s-vfu.ru/user/rasp/new/ajax.php", data=data, cookies=my_cookies)
-    return response.text
+# my_cookies = res.cookies
 
 
-response = query(2902, "loadgroup", "ИМИ", 3, 1,
-                 "1|очная", 2, 2022)
+# def parse_loadgroup(html, groupname):
+#     soup = BeautifulSoup(html, 'html.parser')
+#     select = soup.find('select')
+#     if select:
+#         options = select.find_all('option')
+#         for option in options:
+#             value = option.get('value')
+#             if value and groupname in value:
+#                 return value
+#     return None
 
-print(type(parse_loadgroup(response, "Б-М-22")))
 
- # lesson = {
-                            #     "ИД группы": group_id,
-                            #     "номер пары": j - 5,
-                            #     "день недели": weekday,
-                            #     "временной отрезок": time,
-                            #     "название дисциплины": lesson_name,
-                            #     "ФИО преподавателя": lecturer,
-                            #     "вид деятельности": activity,
-                            #     "номер аудитории": classroom,
-                            # }
-                            # schedule.setdefault(
-                            #     group_name, []).append(lesson)
-                            # print(group_id, filename, semestr, course,
-                            #       fac, form[0], lesson_name,
-                            #       lecturer, weekday, time, chet,
-                            #       activity, corpus, classroom, year, sep="\n")
+# def query(id=None, action=None, fac=None,
+#           code=None, course=None, form=None,
+#           semestr=None, year=None, filename=None,
+#           id_group=None, groupname=None, full=None,
+#           chet=None, weekday=None, activity=None,
+#           corpus=None, classroom=None, lesson=None,
+#           lecturer=None, time=None):
 
-                            # query(action="choicecorpus",
-                            #       id=99999, corpus=corpus, fac=0)
+#     # добавление строки
+#     if action == 'addrow':
+
+#         last_index = str(groupname).rfind("|")
+#         full_semestr = str((int(course) - 1) * 2 + int(semestr))
+#         full = fac + "|" + filename + "|" + \
+#             groupname[:last_index] + "|" + full_semestr + "|" + course + \
+#             "|" + year + "|" + semestr + "|" + \
+#             groupname[last_index:len(groupname)] + "|0" + code + "|" + \
+#             groupname[last_index:len(groupname)] + "|" + form
+#         id = 1
+#         # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
+#         # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
+#         data = {"id": id,
+#                 "full": full
+#                 }
+
+#     # вставка строки
+#     if action == 'insertrow':
+
+#         last_index = str(groupname).rfind("|")
+#         full_semestr = str((int(course) - 1) * 2 + int(semestr))
+#         full = fac + "|" + filename + "|" + \
+#             groupname[:last_index] + "|" + full_semestr + "|" + course + \
+#             "|" + year + "|" + semestr + "|" + \
+#             groupname[last_index:len(groupname)] + "|0" + code + "|" + \
+#             groupname[last_index:len(groupname)] + "|" + form
+
+#         data = {
+#             "data": full,
+#             'courseequalsemestr': 0,
+#             'id_group': id_group,
+#             "filename": filename,
+#             "global_semestr": semestr,
+#             "semestr": (course-1) * 2 + semestr,
+#             "course": course,
+#             "fac": fac,
+#             "year": year,
+#             "form": groupname[3:5],
+#             "formshort": 1,
+#             'id': 1,
+#             'action': action,
+#             'I': lesson,
+#             # "Акинин Михаил Александрович|895035670"
+#             "J": lecturer,
+#             "hours": lecturer[lecturer.find("|") + 1:],
+#             'poggruppa': 0,
+#             "B": weekday,
+#             "F": time,
+#             "chet": chet,
+#             "c": "09.01.2023",
+#             "d": "30.06.2023",
+#             "H": activity,
+#             "L": corpus,
+#             "K": classroom
+#         }
+
+#     # удаление строки
+#     elif action == 'delete':
+
+#         last_index = str(groupname).rfind("|")
+#         full_semestr = str((int(course) - 1) * 2 + int(semestr))
+#         full = fac + "|" + filename + "|" + \
+#             groupname[:last_index] + "|" + full_semestr + "|" + course + \
+#             "|" + year + "|" + semestr + "|" + \
+#             groupname[last_index:len(groupname)] + "|0" + code + "|" + \
+#             groupname[last_index:len(groupname)] + "|" + form
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'full': full,
+#             "fac": fac,
+#             "data": id
+#         }
+
+#     # удаление расписания
+#     elif action == 'remove':
+
+#         last_index = str(groupname).rfind("|")
+#         full_semestr = str((int(course) - 1) * 2 + int(semestr))
+#         full = fac + "|" + filename + "|" + \
+#             groupname[:last_index] + "|" + full_semestr + "|" + course + \
+#             "|" + year + "|" + semestr + "|" + \
+#             groupname[last_index:len(groupname)] + "|0" + code + "|" + \
+#             groupname[last_index:len(groupname)] + "|" + form
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'full': full,
+#             "fac": fac
+#         }
+
+#     # публикация расписания
+#     elif action == 'public1':
+
+#         last_index = str(groupname).rfind("|")
+#         full_semestr = str((int(course) - 1) * 2 + int(semestr))
+#         full = fac + "|" + filename + "|" + \
+#             groupname[:last_index] + "|" + full_semestr + "|" + course + \
+#             "|" + year + "|" + semestr + "|" + \
+#             groupname[last_index:len(groupname)] + "|0" + code + "|" + \
+#             groupname[last_index:len(groupname)] + "|" + form
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'full': full,
+#             "fac": fac
+#         }
+#     elif action == 'public2':
+
+#         data = {
+#             'data': fac + "|" + filename + "|" + id_group + "|" + groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + "|" + year + "|" + semestr + "|" + groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + groupname[last_index:len(groupname)] + "|" + form,
+#             'id_group': id_group,
+#             'filename': filename,
+#             'global_semestr': semestr,
+#             'semestr': (course-1) * 2 + semestr,
+#             'course': course,
+#             'fac': fac,
+#             'year': year,
+#             'form': groupname[3:5],
+#             'formshort': form[0],
+#             'action': action,
+#         }
+
+#     # сохранение расписания
+#     elif action == 'apply':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'filename': filename,
+#             "course": course,
+#             "id_group": id_group,
+#             "semestr": semestr,
+#             "year": year,
+#             "fac": fac
+#         }
+
+#     # выбрать группу
+#     elif action == 'loadgroup':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             "fac": fac,
+#             "code": code,
+#             "course": course,
+#             "form": form,
+#             "semestr": semestr,
+#             "year": year
+#         }
+
+#     # выбрать руп
+#     elif action == 'choicerup':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             "fac": fac,
+#             "course": course,
+#             "form": form,
+#             "semestr": semestr,
+#             "year": year,
+#             "groupname": groupname,
+#         }
+
+#     response = my_session.post(
+#         url="https://www.s-vfu.ru/user/rasp/new/ajax.php", data=data, cookies=my_cookies)
+#     return response.text
+
+
+# response = query(2902, "loadgroup", "ИМИ", 3, 1,
+#                  "1|очная", 2, 2022)
+
+# print(type(parse_loadgroup(response, "Б-М-22")))
+
+# lesson = {
+#     "ИД группы": group_id,
+#     "номер пары": j - 5,
+#     "день недели": weekday,
+#     "временной отрезок": time,
+#     "название дисциплины": lesson_name,
+#     "ФИО преподавателя": lecturer,
+#     "вид деятельности": activity,
+#     "номер аудитории": classroom,
+# }
+# schedule.setdefault(
+#     group_name, []).append(lesson)
+# print(group_id, filename, semestr, course,
+#       fac, form[0], lesson_name,
+#       lecturer, weekday, time, chet,
+#       activity, corpus, classroom, year, sep="\n")
+
+# query(action="choicecorpus",
+#       id=99999, corpus=corpus, fac=0)
 
 # print(response)
 

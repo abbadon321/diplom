@@ -75,7 +75,7 @@ def authorize():
 
 @app.route("/schedule", methods=['GET', 'POST'])
 def schedule_parse():
-    path = 'C:/Users/user/Documents/GitHub/diplom/flask/static'
+    path = 'C:/Users/Серега/Documents/GitHub/diplom/flask/static'
     file = request.files['file']
     file.save(path + file.filename)
     form = request.form.get('form')
@@ -127,11 +127,11 @@ def schedule_parse():
                     filename = parse_choicerup(response.text)
 
                     response = query(action="show", semestr=semestr, course=course, fac=fac,
-                                   year=year, form=form, code=code, id_group=group_id, filename=filename)
+                                     year=year, form=form, code=code, id_group=group_id, filename=filename)
 
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
-                        lesson = {}
+                        # lesson = {}
                         # получение дня недели
                         if (j - 6) % 6 == 0:
                             weekday = str(
@@ -157,11 +157,21 @@ def schedule_parse():
 
                             # добавление строки в таблицу
 
-                            response = query(action="addrow", fac=fac, filename=filename,
-                                             groupname=group, code=code, course=course, year=year, semestr=semestr, form=form[0])
+                            last_index = str(group_id).rfind("|") + 1
+
+                            full_semestr = str(
+                                (int(course) - 1) * 2 + int(semestr))
+
+                            full = fac + "|" + filename + "|" + group_id[:last_index] + full_semestr + "|" + course + "|" + year + "|" + \
+                                semestr + "|" + \
+                                group_id[last_index:len(
+                                    group_id)] + "|0" + code + "|" + group_id[last_index:len(group_id)] + "|" + form[0]
+
+                            response = query(action="addrow", full=full)
 
                             # получение данных проподователя с сервера
-                            lecturer = parse_addrow(response.text, lecturer_name)
+                            lecturer = parse_addrow(
+                                response.text, lecturer_name)
 
                             activity = ws.cell(row=j, column=i + 2).value
                             activity = get_activity(activity)
@@ -171,16 +181,20 @@ def schedule_parse():
 
                             corpus = extract_corpus(classroom)
 
-                            last_index = str(group).rfind("|") + 1
-                            full_semestr = str((int(course) - 1) * 2 + int(semestr))
-                            full = fac + "|" + filename + "|" + group[:last_index] + full_semestr + "|" + course + "|" + year + "|" + semestr + "|" + group[last_index:len(group)] + "|0" + code + "|" + group[last_index:len(group)] + "|" + form
-
                             result = query(full=full, id_group=group_id, filename=filename, semestr=semestr, course=course,
                                            fac=fac, year=year, code=code, form=form[0], action="insertrow", full_semestr=full_semestr, lesson=lesson_name,
                                            lecturer=lecturer, weekday=weekday, time=time, chet=chet,
                                            activity=activity, corpus=corpus, classroom=classroom)
 
                             # print(result.text)
+
+                    response = query(action="public1", full=full, fac=fac)
+                    # if response.text.find(f'После нажатия кнопки "Применить" расписание группы {group_name} будет опубликовано') != -1:
+                    print(response.text)
+
+                    response = query(action="public2", full=full, id_group=group_id, filename=filename, semestr=semestr,
+                                     full_semestr=full_semestr, course=course, fac=fac, year=year, code=code, form=form[0])
+                    print(response.text)
 
         return render_template('schedule.html', buid=buid, data=schedule, res=result.text)
 
@@ -262,8 +276,59 @@ def query(full=None, id=None, action=None, fac=None,
 
     url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
 
+    # выбрать группу
+    if action == 'loadgroup':
+
+        data = {
+            'id': id,
+            'action': action,
+            "fac": fac,
+            "code": code,
+            "course": course,
+            "form": form,
+            "semestr": semestr,
+            "year": year
+        }
+
+    # выбрать руп
+    elif action == 'choicerup':
+        data = {
+            'id': id,
+            'action': action,
+            "fac": fac,
+            "course": course,
+            "form": form,
+            "semestr": semestr,
+            "year": year,
+            "groupname": groupname,
+        }
+
+    # выбор группы и РУПа
+    elif action == 'show':
+        full_semestr = str((int(course) - 1) * 2 + int(semestr))
+        url = "https://www.s-vfu.ru/user/rasp/new/"
+        # headers = {
+        #     "Content-Type": "multipart/form-data;"
+        # }
+        data = {
+            "global_semestr": semestr,
+            "semestr": full_semestr,
+            "course": course,
+            "fac": fac,
+            "year": year,
+            "formshort": form[0],
+            "formname": form[2:],
+            "action": action,
+            "allplany": "on",
+            "code": "0" + code,
+            "id_group": id_group,
+            "plan": filename,
+            "startdate": startdate,
+            "enddate": enddate
+        }
+
     # добавление строки
-    if action == 'addrow':
+    elif action == 'addrow':
         id = 1
         data = {
             "action": action,
@@ -311,27 +376,19 @@ def query(full=None, id=None, action=None, fac=None,
             "K": classroom
         }
 
-    # удаление расписания
-    elif action == 'remove':
-
-        data = {
-            'id': id,
-            'action': action,
-            'full': full,
-            "fac": fac
-        }
-
     # публикация расписания
     elif action == 'public1':
 
         data = {
-            'id': id,
-            'action': action,
+            'id': 1,
+            'action': "public",
             'full': full,
             "fac": fac
         }
 
     elif action == 'public2':
+
+        url = "https://www.s-vfu.ru/user/rasp/new/"
 
         data = {
             'data': full,
@@ -342,78 +399,14 @@ def query(full=None, id=None, action=None, fac=None,
             'course': course,
             'fac': fac,
             'year': year,
-            'form': groupname[3:5],
-            'formshort': form[0],
-            'action': action,
+            'form': "0" + code,
+            'formshort': form,
+            'action': "public",
         }
 
-    # сохранение расписания
-    elif action == 'apply':
-
-        data = {
-            'id': id,
-            'action': action,
-            'filename': filename,
-            "course": course,
-            "id_group": id_group,
-            "semestr": semestr,
-            "year": year,
-            "fac": fac
-        }
-
-    # выбрать группу
-    elif action == 'loadgroup':
-
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "code": code,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year
-        }
-
-    # выбрать руп
-    elif action == 'choicerup':
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year,
-            "groupname": groupname,
-        }
-
-    # выбор группы и РУПа
-    elif action == 'show':
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
-        url = "https://www.s-vfu.ru/user/rasp/new/"
-        # headers = {
-        #     "Content-Type": "multipart/form-data;"  
-        # }
-        data = {
-            "global_semestr": semestr,
-            "semestr": full_semestr,
-            "course": course,
-            "fac": fac,
-            "year": year,
-            "formshort": form[0],
-            "formname": form[2:],
-            "action": action,
-            "allplany": "on",
-            "code": "0" + code,
-            "id_group": id_group,
-            "plan": filename,
-            "startdate": startdate,
-            "enddate": enddate
-        }
     # print(url)
     # print()
-    # print(data)
+    print(data)
     # print()
     # print()
 
@@ -421,7 +414,7 @@ def query(full=None, id=None, action=None, fac=None,
     # print("куки ответа: ", response.cookies)
     # print("заголовки ответа: ", response.headers)
     # print("содержимое ответа: \n", response.text)
-    # print("\n============================================================================================================================\n\n")
+    print("\n============================================================================================================================\n\n")
     return response
 
 
