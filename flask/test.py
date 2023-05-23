@@ -224,6 +224,26 @@ response = query(2902, "loadgroup", "ИМИ", 3, 1,
 
 print(type(parse_loadgroup(response, "Б-М-22")))
 
+ # lesson = {
+                            #     "ИД группы": group_id,
+                            #     "номер пары": j - 5,
+                            #     "день недели": weekday,
+                            #     "временной отрезок": time,
+                            #     "название дисциплины": lesson_name,
+                            #     "ФИО преподавателя": lecturer,
+                            #     "вид деятельности": activity,
+                            #     "номер аудитории": classroom,
+                            # }
+                            # schedule.setdefault(
+                            #     group_name, []).append(lesson)
+                            # print(group_id, filename, semestr, course,
+                            #       fac, form[0], lesson_name,
+                            #       lecturer, weekday, time, chet,
+                            #       activity, corpus, classroom, year, sep="\n")
+
+                            # query(action="choicecorpus",
+                            #       id=99999, corpus=corpus, fac=0)
+
 # print(response)
 
 # group = "02.03.02|7471|ИМИ-Б-ФИИТ-21|5998"
