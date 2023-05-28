@@ -19,12 +19,14 @@ server_url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
 
 @app.route('/test')
 def test():
+
     return render_template("test.html")
 
 
 @app.route('/')
 @app.route('/auth')
 def index():
+
     return render_template('index.html')
 
 
@@ -129,6 +131,25 @@ def schedule_parse():
                     response = query(action="show", semestr=semestr, course=course, fac=fac,
                                      year=year, form=form, code=code, id_group=group_id, filename=filename)
 
+                    last_index = str(group_id).rfind("|") + 1
+
+                    full_semestr = str(
+                        (int(course) - 1) * 2 + int(semestr))
+
+                    full = f"{fac}|{filename}|{group_id[:last_index]}{full_semestr}|{course}|{year}|{semestr}|{group_id[last_index:len(group_id)]}|0{code}|{group_id[last_index:len(group_id)]}|{form[0]}"
+
+                    # удаление ИД всех существующих занятий
+                    lessons = get_lessons(response.text, full, fac)
+
+                    # удаление всех существующих занятий
+                    if len(lessons) > 0:
+                        for i in range(0, len(lessons), 4):
+                            query(action="delete", id=1,
+                                  cell_id=lessons[i], full=full, fac=fac)
+                            query(action="remove", cell_id=lessons[i], full=full, id_group=group_id,
+                                  filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
+                                  fac=fac, year=year, form=form[0], code=code)
+
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
                         # lesson = {}
@@ -156,17 +177,6 @@ def schedule_parse():
                             #         lecturer = get_lecturers(lecturer_name)
 
                             # добавление строки в таблицу
-
-                            last_index = str(group_id).rfind("|") + 1
-
-                            full_semestr = str(
-                                (int(course) - 1) * 2 + int(semestr))
-
-                            full = fac + "|" + filename + "|" + group_id[:last_index] + full_semestr + "|" + course + "|" + year + "|" + \
-                                semestr + "|" + \
-                                group_id[last_index:len(
-                                    group_id)] + "|0" + code + "|" + group_id[last_index:len(group_id)] + "|" + form[0]
-
                             response = query(action="addrow", full=full)
 
                             # получение данных проподователя с сервера
@@ -201,6 +211,27 @@ def schedule_parse():
     else:
         error = "Ошибка при загрузке файла"
         return redirect(url_for('main'))
+
+
+def get_lessons(html_code):
+    # Найти таблицу по ее идентификатору
+    soup = BeautifulSoup(html_code, 'html.parser')
+    table = soup.find('table', id='mytable')
+
+    # Получить все строки таблицы
+    rows = table.find_all('tr')
+
+    lessons_id = []
+
+    # Пройтись по каждой строке и извлечь данные из ячеек
+    for row in rows:
+        cells = row.find_all('td')
+        for cell in cells:
+            cell_id = cell.get('id')
+            if cell_id:
+                lessons_id.append(cell_id)
+
+    return lessons_id
 
 
 def get_year_and_semestr(string):
@@ -272,7 +303,8 @@ def query(full=None, id=None, action=None, fac=None,
           id_group=None, groupname=None,
           chet="", weekday=None, activity=None,
           corpus=None, classroom=None, lesson=None,
-          lecturer=None, time=None, full_semestr=None, startdate="", enddate=""):
+          lecturer=None, time=None, full_semestr=None, startdate="", enddate="",
+          cell_id=None):
 
     url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
 
@@ -325,6 +357,37 @@ def query(full=None, id=None, action=None, fac=None,
             "plan": filename,
             "startdate": startdate,
             "enddate": enddate
+        }
+
+    # удаление строки
+    elif action == 'delete':
+
+        data = {
+            "action": action,
+            "id": id,
+            "data": cell_id,
+            "full": full,
+            "fac": fac
+        }
+
+    # подтверждение удаления строки
+    elif action == 'remove':
+
+        url = "https://www.s-vfu.ru/user/rasp/new/"
+
+        data = {
+            "data": full,
+            "id_group": id_group,
+            "filename": filename,
+            "global_semestr": semestr,
+            "semestr": full_semestr,
+            "course": course,
+            "fac": fac,
+            "year": year,
+            "form": "0" + code,
+            "formshort": form,
+            "action": "delete",
+            "id": cell_id[2:]
         }
 
     # добавление строки
