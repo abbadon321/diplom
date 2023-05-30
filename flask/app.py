@@ -139,16 +139,18 @@ def schedule_parse():
                     full = f"{fac}|{filename}|{group_id[:last_index]}{full_semestr}|{course}|{year}|{semestr}|{group_id[last_index:len(group_id)]}|0{code}|{group_id[last_index:len(group_id)]}|{form[0]}"
 
                     # удаление ИД всех существующих занятий
-                    lessons = get_lessons(response.text, full, fac)
+                    lessons = get_lessons(response.text)
+
+                    print(lessons)
 
                     # удаление всех существующих занятий
-                    if len(lessons) > 0:
-                        for i in range(0, len(lessons), 4):
-                            query(action="delete", id=1,
-                                  cell_id=lessons[i], full=full, fac=fac)
-                            query(action="remove", cell_id=lessons[i], full=full, id_group=group_id,
-                                  filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
-                                  fac=fac, year=year, form=form[0], code=code)
+                    # if len(lessons) > 0:
+                    #     for i in range(0, len(lessons), 4):
+                    #         query(action="delete", id=1,
+                    #               cell_id=lessons[i], full=full, fac=fac)
+                    #         query(action="remove", cell_id=lessons[i], full=full, id_group=group_id,
+                    #               filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
+                    #               fac=fac, year=year, form=form[0], code=code)
 
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
