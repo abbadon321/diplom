@@ -77,15 +77,13 @@ def authorize():
 
 @app.route("/schedule", methods=['GET', 'POST'])
 def schedule_parse():
-    path = 'C:/Users/Серега/Documents/GitHub/diplom/flask/static'
+    path = 'C:/Users/Серега/Documents/GitHub/diplom/flask/static/'
     file = request.files['file']
     file.save(path + file.filename)
     form = request.form.get('form')
     fac = request.form.get('fac')
-    schedule = {}
 
     if file and fac and form:
-        # lecturers = requests.get(url="http://localhost:8000/lecturers").json()
         buid = session.get('buid', 'ошибка')
         wb = load_workbook(filename=path + file.filename)
         sheets_names = wb.sheetnames
@@ -99,15 +97,25 @@ def schedule_parse():
 
             course = str(ws.cell(row=2, column=1).value).strip()[0]
             year_and_semestr = str(ws.cell(row=1, column=1).value)
+            year, semestr = get_year_and_semestr(year_and_semestr)
+
             if course == "None" and year_and_semestr == "None":
                 continue
-
+            
             # цикл по всем группам
             for i in range(3, ws.max_column, 4):
+
                 # получение названия группы
                 group_name = str(ws.cell(row=4, column=i).value).strip()
-                if group_name != "**" and group_name != "*" and group_name != "None":
-                    year, semestr = get_year_and_semestr(year_and_semestr)
+
+                if semestr == "1":
+                    startdate = str(ws.cell(row=4, column=i + 2).value).strip() + "." + year
+                    enddate = str(ws.cell(row=4, column=i + 3).value).strip() + "." + year
+                else:
+                    startdate = str(ws.cell(row=4, column=i + 2).value).strip() + "." + str(int(year) + 1)
+                    enddate = str(ws.cell(row=4, column=i + 3).value).strip() + "." + str(int(year) + 1)
+
+                if str(ws.cell(row=3, column=i).value).strip().lower() == "наименование группы":
 
                     # получения кода для формы обучения
                     code = get_code(group_name)
@@ -118,97 +126,94 @@ def schedule_parse():
 
                     # получение нужной группы из списка
                     group = parse_loadgroup(response.text, group_name)
+
                     # получение id группы
                     group_id = group[group.find("|") + 1:]
 
                     # получение РУПа
-                    # ПОЧЕМУ PLAN И FILENAME В КОНЕЧНОМ ИТОГЕ РАЗНЫЕ
                     response = query(id=buid, action="choicerup",
                                      fac=fac, course=course, form=form, semestr=semestr, year=year, groupname=group)
 
-                    filename = parse_choicerup(response.text)
+                    full_semestr, filename = parse_choicerup(response.text)
 
                     response = query(action="show", semestr=semestr, course=course, fac=fac,
                                      year=year, form=form, code=code, id_group=group_id, filename=filename)
 
                     last_index = str(group_id).rfind("|") + 1
 
-                    full_semestr = str(
-                        (int(course) - 1) * 2 + int(semestr))
-
                     full = f"{fac}|{filename}|{group_id[:last_index]}{full_semestr}|{course}|{year}|{semestr}|{group_id[last_index:len(group_id)]}|0{code}|{group_id[last_index:len(group_id)]}|{form[0]}"
 
-                    # удаление ИД всех существующих занятий
+                    # получение ИД всех существующих занятий
                     lessons = get_lessons(response.text)
 
                     print(lessons)
 
                     # удаление всех существующих занятий
-                    # if len(lessons) > 0:
-                    #     for i in range(0, len(lessons), 4):
-                    #         query(action="delete", id=1,
-                    #               cell_id=lessons[i], full=full, fac=fac)
-                    #         query(action="remove", cell_id=lessons[i], full=full, id_group=group_id,
-                    #               filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
-                    #               fac=fac, year=year, form=form[0], code=code)
-
+                    if len(lessons) > 0:
+                        for k in range(0, len(lessons), 4):
+                            query(action="delete", id=1,
+                                  cell_id=lessons[k], full=full, fac=fac)
+                            query(action="remove", cell_id=lessons[k], full=full, id_group=group_id,
+                                  filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
+                                  fac=fac, year=year, form=form[0], code=code)
+                    
                     # цикл по занятиям одной группы
                     for j in range(6, 42):
-                        # lesson = {}
+                
                         # получение дня недели
-                        if (j - 6) % 6 == 0:
+                        if j % 6 == 0:
                             weekday = str(
                                 ws.cell(row=j, column=1).value).strip().upper()
 
                         # проверка, что дисциплина есть (наличие пары)
                         if ws.cell(row=j, column=i).value is not None:
-                            time = ws.cell(row=j, column=2).value.replace(
+                
+                            time = str(ws.cell(row=j, column=2).value).replace(
                                 ".", ":").replace(" -- ", "-")
-                            lesson_name = ws.cell(
-                                row=j, column=i).value.strip()
-
-                            # if len(lesson_name.split("\n")) > 1:
+                            lesson_name = str(ws.cell(
+                                row=j, column=i).value).strip()
+                            
+                            if lesson_name.find("1/2") == -1:
+                                podgruppa = 0
 
                             lesson_name, chet = get_parity(lesson_name)
 
                             lecturer_name = str(
                                 ws.cell(row=j, column=i + 1).value)
 
-                            # if len(lecturer_name) > 1:
-                            #     for i in range(len(lecturer_name)):
-                            #         lecturer = get_lecturers(lecturer_name)
-
                             # добавление строки в таблицу
                             response = query(action="addrow", full=full)
 
                             # получение данных проподователя с сервера
-                            lecturer = parse_addrow(
-                                response.text, lecturer_name)
+                            if lecturer_name != "None":
+                                hours, lecturer = parse_addrow(
+                                    response.text, lecturer_name.split('\n')[0])
+                            else: 
+                                hours, lecturer = ("","")
+                            
 
-                            activity = ws.cell(row=j, column=i + 2).value
+                            activity = str(ws.cell(row=j, column=i + 2).value)
                             activity = get_activity(activity)
 
-                            classroom = (
-                                str(ws.cell(row=j, column=i + 3).value).strip())
+                            classroom = str(ws.cell(row=j, column=i + 3).value).split("\n")[0].strip()
 
                             corpus = extract_corpus(classroom)
 
                             result = query(full=full, id_group=group_id, filename=filename, semestr=semestr, course=course,
                                            fac=fac, year=year, code=code, form=form[0], action="insertrow", full_semestr=full_semestr, lesson=lesson_name,
-                                           lecturer=lecturer, weekday=weekday, time=time, chet=chet,
-                                           activity=activity, corpus=corpus, classroom=classroom)
+                                           lecturer=lecturer, weekday=weekday, time=time, chet=chet, startdate=startdate, enddate=enddate,
+                                           activity=activity, corpus=corpus, classroom=classroom, hours=hours, podgruppa=podgruppa)
 
-                            # print(result.text)
+                    response = query(action="public_check", full=full, fac=fac)
+                    if response.text.find(f'После нажатия кнопки "Применить" расписание группы ИМИ-{group_name} будет опубликовано') != -1:
+                        print(response.text)
 
-                    response = query(action="public1", full=full, fac=fac)
-                    # if response.text.find(f'После нажатия кнопки "Применить" расписание группы {group_name} будет опубликовано') != -1:
-                    print(response.text)
-
-                    response = query(action="public2", full=full, id_group=group_id, filename=filename, semestr=semestr,
+                        response = query(action="public", full=full, id_group=group_id, filename=filename, semestr=semestr,
                                      full_semestr=full_semestr, course=course, fac=fac, year=year, code=code, form=form[0])
-                    print(response.text)
+                        print(response.text)
 
-        return render_template('schedule.html', buid=buid, data=schedule, res=result.text)
+        return render_template('schedule.html', buid=buid, res=result.text)
+        # return render_template('schedule.html', buid=buid)
 
     else:
         error = "Ошибка при загрузке файла"
@@ -241,13 +246,13 @@ def get_year_and_semestr(string):
     if string1:
         semestr = string1[0]
     else:
-        semestr = "Семестр не определен. Проверьте формат файла!"
+        semestr = None
 
     string2 = re.findall(r"полугодие\s+(\d+)\s*-\s*", string)
     if string2:
         year = string2[0][-4:]
     else:
-        year = "Год не определен. Проверьте формат файла!"
+        year = None
     return (year, semestr)
 
 
@@ -256,6 +261,8 @@ def get_parity(lesson):
         return ((lesson[:len(lesson) - 2]).strip(), "2")
     elif lesson.endswith("*"):
         return ((lesson[:len(lesson) - 1]).strip(), "1")
+    elif lesson.endswith("*,**") or lesson.endswith("*, **"):
+        return ((lesson[:lesson.find("*")]).strip(), "0")
     else:
         return (lesson, "0")
 
@@ -295,18 +302,21 @@ def extract_corpus(string):
     if match is not None:
         # Возвращаем слово из совпадения
         return match.group(2)
+    elif string == "Спортивный":
+        return "Юность"
     else:
         return "КФЕН"
 
 
-def query(full=None, id=None, action=None, fac=None,
-          code=None, course=None, form="",
-          semestr=None, year=None, filename=None,
-          id_group=None, groupname=None,
-          chet="", weekday=None, activity=None,
-          corpus=None, classroom=None, lesson=None,
-          lecturer=None, time=None, full_semestr=None, startdate="", enddate="",
-          cell_id=None):
+def query(full="", id="", action="", fac="",
+          code="", course="", form="",
+          semestr="", year="", filename="",
+          id_group="", groupname="",
+          chet="", weekday="", activity="",
+          corpus="", classroom="", lesson="",
+          lecturer="", time="", full_semestr="", 
+          startdate="", enddate="",
+          cell_id="", hours="", podgruppa=""):
 
     url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
 
@@ -339,7 +349,6 @@ def query(full=None, id=None, action=None, fac=None,
 
     # выбор группы и РУПа
     elif action == 'show':
-        full_semestr = str((int(course) - 1) * 2 + int(semestr))
         url = "https://www.s-vfu.ru/user/rasp/new/"
         # headers = {
         #     "Content-Type": "multipart/form-data;"
@@ -410,7 +419,7 @@ def query(full=None, id=None, action=None, fac=None,
         }
 
     # вставка строки
-    if action == 'insertrow':
+    elif action == 'insertrow':
 
         url = "https://www.s-vfu.ru/user/rasp/new/"
 
@@ -429,20 +438,22 @@ def query(full=None, id=None, action=None, fac=None,
             'action': action,
             'I': lesson,
             "J": lecturer,
-            "hours": lecturer[lecturer.find("|") + 1:],
-            'podgruppa': 0,
+            "hours": hours,
+            'podgruppa': podgruppa,
             "B": weekday,
             "F": time,
             "chet": chet,
-            "c": "09.01.2023",
-            "d": "30.06.2023",
+            # "c": "09.01.2023",
+            # "d": "30.06.2023",
+            'c': startdate,
+            'd': enddate,
             "H": activity,
             "L": corpus,
             "K": classroom
         }
 
     # публикация расписания
-    elif action == 'public1':
+    elif action == 'public_check':
 
         data = {
             'id': 1,
@@ -451,7 +462,7 @@ def query(full=None, id=None, action=None, fac=None,
             "fac": fac
         }
 
-    elif action == 'public2':
+    elif action == 'public':
 
         url = "https://www.s-vfu.ru/user/rasp/new/"
 
@@ -466,7 +477,7 @@ def query(full=None, id=None, action=None, fac=None,
             'year': year,
             'form': "0" + code,
             'formshort': form,
-            'action': "public",
+            'action': action,
         }
 
     # print(url)
@@ -497,12 +508,10 @@ def parse_loadgroup(html, groupname):
 
 def parse_choicerup(html):
     soup = BeautifulSoup(html, 'html.parser')
-    plan_element = soup.find('input', {'name': 'plan'})
-    if plan_element:
-        plan_value = plan_element.get('value')
-        return plan_value
-    else:
-        return "РУП не найден!"
+    plan = soup.find('input', {'name': 'plan'}).get('value')
+    semestr = soup.find('input', {'name': 'semestr'}).get('value')
+    if plan and semestr:
+        return (semestr, plan) 
 
 
 def parse_addrow(html, lecturer):
@@ -518,7 +527,7 @@ def parse_addrow(html, lecturer):
             string = text.split()
             lecturer_initials = string[1][0] + string[2][0]
             if initials == lecturer_initials:
-                return text + "|" + option['value']
+                return ("", text + "|" + option['value'])
 
     else:
         # есть проблема совпадений по фамилии и инициалам а также полных тесок
@@ -526,11 +535,9 @@ def parse_addrow(html, lecturer):
             url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term={surname} {initials[0]}")
         data = response.json()
         for d in data:
-            string = d.split()
+            string = str(d).split()
             if string[2].startswith(initials[1]):
-                return d
-            else:
-                "Преподаватель не найден!"
+                return (d[d.find("|") + 1:], "")
 
 
 HOST_PORT = "5000"

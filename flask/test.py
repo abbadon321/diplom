@@ -4,6 +4,33 @@ import requests
 from openpyxl import load_workbook
 import re
 
+wb = load_workbook(filename="C:/Users/Серега/Documents/GitHub/diplom/flask/static/1 страница.xlsx")
+sheets_names = wb.sheetnames
+
+ws = wb.active
+
+for i in range(3, ws.max_column, 4):
+    group_name = str(ws.cell(row=4, column=i).value).strip()
+    if str(ws.cell(row=3, column=i).value).strip().lower() == "наименование группы":
+        for j in range(6, 42):
+            if ws.cell(row=j, column=i).value is not None:
+                time = str(ws.cell(row=j, column=2).value).replace(
+                                    ".", ":").replace(" -- ", "-")
+                lesson_name = str(ws.cell(
+                                    row=j, column=i).value).strip()
+                print(time, lesson_name, end='\n\n')
+
+
+
+
+
+# html = """
+# <input type="hidden" name="data" value="ИМИ|010301_22_1ФИЦЭ.plx|7915|ИМИ-Б-М-22|2|1|2022|2|6581|03|6581|1"><input type="hidden" name="id_group" value="7915|ИМИ-Б-М-22|6581"><input type="hidden" name="filename" value="010301_22_1ФИЦЭ.plx"><input type="hidden" name="global_semestr" value="2"><input type="hidden" name="semestr" value="2"><input type="hidden" name="course" value="1"><input type="hidden" name="fac" value="ИМИ"><input type="hidden" name="year" value="2022"><input type="hidden" name="form" value="03"><input type="hidden" name="formshort" value="1"><div class="alert alert-danger">Внимание, у вас есть строки без преподавателей, если преподаватель не определен, очевидны ошибки при поиске свободных аудиторий и преподавателей</div><li>Иностранный язык (практика)-ПОНЕДЕЛЬНИК с 25.01 по 14.06 [08:00-09:35]</li><li>Иностранный язык (практика)-ВТОРНИК с 25.01 по 14.06 [08:00-09:35]</li><li>Иностранный язык (практика)-СРЕДА с 25.01 по 14.06 [08:00-09:35]</li><li>Иностранный язык (практика)-ЧЕТВЕРГ с 25.01 по 14.06 [08:00-09:35]</li><li>Иностранный язык (практика)-ПЯТНИЦА с 25.01 по 14.06 [08:00-09:35]</li><li>Алгебра (лекция)-ПЯТНИЦА с 09.01 по 30.06 [14:00-15:35]</li><li>Алгебра (практика)-ПЯТНИЦА с 09.01 по 30.06 [15:50-17:25]</li><li>Основы проектной деятельности (лекция, практика)-СУББОТА с 09.01 по 30.06 [09:50-11:25]</li><li>Основы проектной деятельности (лекция, практика)-СУББОТА с 09.01 по 30.06 [09:50-11:25]</li><li> Предупреждение поточная аудитория ВТОРНИК с 02.05 по 06.05 [11:40-13:15]-424(КФЕН) Местников С. В. читает Методы оптимизации в группе З-БП-ИВТ-18 у вас 424(КФЕН) - ВТОРНИК с 25.01 по 14.06 [11:40-13:15] читает Программирование </li><li> Предупреждение поточная аудитория СРЕДА с 09.01 по 30.06 [11:40-13:15]-Спортивный(Юность) Колодезникова М. Г. читает Элективные дисциплины по физической культуре и спорту в группе ГИ-С-ПР-22 у вас Спортивный(Юность) - СРЕДА с 09.01 по 30.06 [11:40-13:15] читает Элективные дисциплины по физической культуре и спорту </li><li> Предупреждение поточная аудитория СУББОТА с 09.01 по 30.06 [11:40-13:15]-Спортивный(Юность) Колодезникова М. Г. читает Элективные дисциплины по физической культуре и спорту в группе ГИ-С-ПР-22 у вас Спортивный(Юность) - СУББОТА с 09.01 по 30.06 [11:40-13:15] читает Элективные дисциплины по физической культуре и спорту </li><li> Предупреждение поточная аудитория ЧЕТВЕРГ с 27.03 по 31.03 [11:40-13:15]-353(КФЕН) Эверстова В. Н. читает Методика обучения математике в группе ИМИ-З-Б-ПОИМ-20 у вас 353(КФЕН) - ЧЕТВЕРГ с 09.01 по 30.06 [11:40-13:15] читает Аналитическая геометрия </li><li> Предупреждение поточная аудитория ЧЕТВЕРГ с 25.01 по 14.06 [11:40-13:15]-424(КФЕН) Акимов М. П. читает Введение в сквозные цифровые технологии в группе ИМИ-Б-ПМИ-22-1 у вас 424(КФЕН) - ЧЕТВЕРГ с 25.01 по 14.06 [11:40-13:15] читает Программирование </li>После нажатия кнопки "Применить" расписание группы ИМИ-Б-М-22 будет опубликовано<input type="hidden" name="action" value="public">
+# """
+
+# if html.find(f'После нажатия кнопки "Применить" расписание группы ИМИ-Б-М-22 будет опубликовано') != -1:
+#     print("yes")
+
 
 # html_code = """
 
@@ -257,214 +284,214 @@ import re
 
 # print(full)
 
-my_session = requests.Session()
+# my_session = requests.Session()
 
-url = 'https://www.s-vfu.ru/?login=yes'
-
-
-data = {
-    'AUTH_FORM': 'Y',
-    'TYPE': 'AUTH',
-    'USER_LOGIN': "rom.na",
-    'USER_PASSWORD': "CfvjqkjdFY1937",
-    'Login': ''
-}
-
-cookies = {
-    "entersite": "www.s-vfu.ru",
-}
-
-res = my_session.post(url, data=data, cookies=cookies, verify=False)
-
-my_cookies = res.cookies
-
-# res = my_session.post(url="https://www.s-vfu.ru/user/rasp/new/ajax.php",
-#                       data={
-#                           "action": "aboutgroup",
-#                           "id": "2902"
-#                       }
-#                       )
+# url = 'https://www.s-vfu.ru/?login=yes'
 
 
-# def parse_loadgroup(html, groupname):
-#     soup = BeautifulSoup(html, 'html.parser')
-#     select = soup.find('select')
-#     if select:
-#         options = select.find_all('option')
-#         for option in options:
-#             value = option.get('value')
-#             if value and groupname in value:
-#                 return value
-#     return None
+# data = {
+#     'AUTH_FORM': 'Y',
+#     'TYPE': 'AUTH',
+#     'USER_LOGIN': "rom.na",
+#     'USER_PASSWORD': "CfvjqkjdFY1937",
+#     'Login': ''
+# }
+
+# cookies = {
+#     "entersite": "www.s-vfu.ru",
+# }
+
+# res = my_session.post(url, data=data, cookies=cookies, verify=False)
+
+# my_cookies = res.cookies
+
+# # res = my_session.post(url="https://www.s-vfu.ru/user/rasp/new/ajax.php",
+# #                       data={
+# #                           "action": "aboutgroup",
+# #                           "id": "2902"
+# #                       }
+# #                       )
 
 
-def query(id=None, action=None, fac=None,
-          code=None, course=None, form=None,
-          semestr=None, year=None, filename=None,
-          id_group=None, groupname=None, full=None,
-          chet=None, weekday=None, activity=None,
-          corpus=None, classroom=None, lesson=None,
-          lecturer=None, time=None, cell_id=None):
-
-    url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
-
-    # добавление строки
-    if action == 'addrow':
-        id = 1
-        # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
-        # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
-        data = {"id": id,
-                "full": full
-                }
-
-    # удаление строки
-    elif action == 'delete':
-
-        data = {
-            "action": action,
-            "id": id,
-            "data": cell_id,
-            "full": full,
-            "fac": fac
-        }
-
-    # подтверждение удаления строки
-    elif action == 'remove':
-
-        url = "https://www.s-vfu.ru/user/rasp/new/"
-
-        data = {
-            "data": full,
-            "id_group": id_group,
-            "filename": filename,
-            "global_semestr": semestr,
-            "semestr": "A",
-            "course": course,
-            "fac": fac,
-            "year": year,
-            "form": "0" + code,
-            "formshort": form,
-            "action": "delete",
-            "id": cell_id[2:]
-        }
-
-    # вставка строки
-    elif action == 'insertrow':
-
-        data = {
-            "data": full,
-            'courseequalsemestr': 0,
-            'id_group': id_group,
-            "filename": filename,
-            "global_semestr": semestr,
-            "semestr": (course-1) * 2 + semestr,
-            "course": course,
-            "fac": fac,
-            "year": year,
-            "form": groupname[3:5],
-            "formshort": 1,
-            'id': 1,
-            'action': action,
-            'I': lesson,
-            # "Акинин Михаил Александрович|895035670"
-            "J": lecturer,
-            "hours": lecturer[lecturer.find("|") + 1:],
-            'poggruppa': 0,
-            "B": weekday,
-            "F": time,
-            "chet": chet,
-            "c": "09.01.2023",
-            "d": "30.06.2023",
-            "H": activity,
-            "L": corpus,
-            "K": classroom
-        }
-
-    # публикация расписания
-    elif action == 'public1':
-
-        data = {
-            'id': id,
-            'action': action,
-            'full': full,
-            "fac": fac
-        }
-    elif action == 'public2':
-
-        data = {
-            'data': fac + "|" + filename + "|" + id_group + "|" + groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + "|" + year + "|" + semestr + "|" + groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + groupname[last_index:len(groupname)] + "|" + form,
-            'id_group': id_group,
-            'filename': filename,
-            'global_semestr': semestr,
-            'semestr': (course-1) * 2 + semestr,
-            'course': course,
-            'fac': fac,
-            'year': year,
-            'form': groupname[3:5],
-            'formshort': form[0],
-            'action': action,
-        }
-
-    # сохранение расписания
-    elif action == 'apply':
-
-        data = {
-            'id': id,
-            'action': action,
-            'filename': filename,
-            "course": course,
-            "id_group": id_group,
-            "semestr": semestr,
-            "year": year,
-            "fac": fac
-        }
-
-    # выбрать группу
-    elif action == 'loadgroup':
-
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "code": code,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year
-        }
-
-    # выбрать руп
-    elif action == 'choicerup':
-
-        data = {
-            'id': id,
-            'action': action,
-            "fac": fac,
-            "course": course,
-            "form": form,
-            "semestr": semestr,
-            "year": year,
-            "groupname": groupname,
-        }
-
-    response = my_session.post(
-        url=url, data=data, cookies=my_cookies)
-    return response
+# # def parse_loadgroup(html, groupname):
+# #     soup = BeautifulSoup(html, 'html.parser')
+# #     select = soup.find('select')
+# #     if select:
+# #         options = select.find_all('option')
+# #         for option in options:
+# #             value = option.get('value')
+# #             if value and groupname in value:
+# #                 return value
+# #     return None
 
 
-response = query(action="delete", id=1,
-                 cell_id="A-701219", full="ИМИ|090301_22П_5ИВТПО_zfo_vo.plx|6090|З-БП-ИВТ-18|A|5|2022|2|4703||4703|2", fac="ИМИ")
+# def query(id=None, action=None, fac=None,
+#           code=None, course=None, form=None,
+#           semestr=None, year=None, filename=None,
+#           id_group=None, groupname=None, full=None,
+#           chet=None, weekday=None, activity=None,
+#           corpus=None, classroom=None, lesson=None,
+#           lecturer=None, time=None, cell_id=None):
 
-print(response.text)
+#     url = "https://www.s-vfu.ru/user/rasp/new/ajax.php"
 
-print("\n\n")
+#     # добавление строки
+#     if action == 'addrow':
+#         id = 1
+#         # groupname: 02.03.02|7471|ИМИ-Б-ФИИТ-21|5998
+#         # ИМИ|02030201_22_2ФИИТ.plx|7471|ИМИ-Б-ФИИТ-21|3|2|2022|1|5998|03|5998|1
+#         data = {"id": id,
+#                 "full": full
+#                 }
 
-response = query(action="remove", cell_id="A-701219", full="ИМИ|090301_22П_5ИВТПО_zfo_vo.plx|6090|З-БП-ИВТ-18|A|5|2022|2|4703||4703|2",
-                 id_group="6090|З-БП-ИВТ-18|4703",
-                 filename="090301_22П_5ИВТПО_zfo_vo.plx", semestr="2", course="5",
-                 fac="ИМИ", year="2022", form="2", code="3")
+#     # удаление строки
+#     elif action == 'delete':
 
-print(response.text)
+#         data = {
+#             "action": action,
+#             "id": id,
+#             "data": cell_id,
+#             "full": full,
+#             "fac": fac
+#         }
+
+#     # подтверждение удаления строки
+#     elif action == 'remove':
+
+#         url = "https://www.s-vfu.ru/user/rasp/new/"
+
+#         data = {
+#             "data": full,
+#             "id_group": id_group,
+#             "filename": filename,
+#             "global_semestr": semestr,
+#             "semestr": "A",
+#             "course": course,
+#             "fac": fac,
+#             "year": year,
+#             "form": "0" + code,
+#             "formshort": form,
+#             "action": "delete",
+#             "id": cell_id[2:]
+#         }
+
+#     # вставка строки
+#     elif action == 'insertrow':
+
+#         data = {
+#             "data": full,
+#             'courseequalsemestr': 0,
+#             'id_group': id_group,
+#             "filename": filename,
+#             "global_semestr": semestr,
+#             "semestr": (course-1) * 2 + semestr,
+#             "course": course,
+#             "fac": fac,
+#             "year": year,
+#             "form": groupname[3:5],
+#             "formshort": 1,
+#             'id': 1,
+#             'action': action,
+#             'I': lesson,
+#             # "Акинин Михаил Александрович|895035670"
+#             "J": lecturer,
+#             "hours": lecturer[lecturer.find("|") + 1:],
+#             'poggruppa': 0,
+#             "B": weekday,
+#             "F": time,
+#             "chet": chet,
+#             "c": "09.01.2023",
+#             "d": "30.06.2023",
+#             "H": activity,
+#             "L": corpus,
+#             "K": classroom
+#         }
+
+#     # публикация расписания
+#     elif action == 'public1':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'full': full,
+#             "fac": fac
+#         }
+#     elif action == 'public2':
+
+#         data = {
+#             'data': fac + "|" + filename + "|" + id_group + "|" + groupname[:last_index] + "|" + str((course-1) * 2 + semestr) + "|" + course + "|" + year + "|" + semestr + "|" + groupname[last_index:len(groupname)] + "|" + groupname[3:5] + "|" + groupname[last_index:len(groupname)] + "|" + form,
+#             'id_group': id_group,
+#             'filename': filename,
+#             'global_semestr': semestr,
+#             'semestr': (course-1) * 2 + semestr,
+#             'course': course,
+#             'fac': fac,
+#             'year': year,
+#             'form': groupname[3:5],
+#             'formshort': form[0],
+#             'action': action,
+#         }
+
+#     # сохранение расписания
+#     elif action == 'apply':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             'filename': filename,
+#             "course": course,
+#             "id_group": id_group,
+#             "semestr": semestr,
+#             "year": year,
+#             "fac": fac
+#         }
+
+#     # выбрать группу
+#     elif action == 'loadgroup':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             "fac": fac,
+#             "code": code,
+#             "course": course,
+#             "form": form,
+#             "semestr": semestr,
+#             "year": year
+#         }
+
+#     # выбрать руп
+#     elif action == 'choicerup':
+
+#         data = {
+#             'id': id,
+#             'action': action,
+#             "fac": fac,
+#             "course": course,
+#             "form": form,
+#             "semestr": semestr,
+#             "year": year,
+#             "groupname": groupname,
+#         }
+
+#     response = my_session.post(
+#         url=url, data=data, cookies=my_cookies)
+#     return response
+
+
+# response = query(action="delete", id=1,
+#                  cell_id="A-701219", full="ИМИ|090301_22П_5ИВТПО_zfo_vo.plx|6090|З-БП-ИВТ-18|A|5|2022|2|4703||4703|2", fac="ИМИ")
+
+# print(response.text)
+
+# print("\n\n")
+
+# response = query(action="remove", cell_id="A-701219", full="ИМИ|090301_22П_5ИВТПО_zfo_vo.plx|6090|З-БП-ИВТ-18|A|5|2022|2|4703||4703|2",
+#                  id_group="6090|З-БП-ИВТ-18|4703",
+#                  filename="090301_22П_5ИВТПО_zfo_vo.plx", semestr="2", course="5",
+#                  fac="ИМИ", year="2022", form="2", code="3")
+
+# print(response.text)
 
 # response = query(2902, "loadgroup", "ИМИ", 3, 1,
 #                  "1|очная", 2, 2022)
