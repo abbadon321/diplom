@@ -4,7 +4,7 @@
 
 actor "Пользователь" as user
 participant "компьютер Пользователя" as comp
-participant "сервер СВФУ (www.s-vfu.ru)" as server
+participant "сервер СВФУ\n(www.s-vfu.ru)" as server
 
 
 user++
@@ -62,12 +62,11 @@ user -[#green]> comp: 3.1 Выбор РУПа
             (может быть пустой)
         end note
     autonumber stop
-    comp--
 
-alt#Gold #LightBlue Добавление строки
+
 user -[#green]> comp: 4.1 Добавление строки с занятием
     autonumber 4.1.1
-    comp++
+
         comp -[#blue]> server: POST /user/rasp/new/ajax.php, action: addrow
         server++
             server -[#red]-> comp: Response: отклик с html-кодом
@@ -92,64 +91,10 @@ user -[#green]> comp: 4.2 Отправка заполненной формы
             с расписанием группы
         end note
     autonumber stop
-    comp--
-
-else #LightGrey редактирование строки
-user -[#green]> comp: 4.1 Редактирование строки с занятием
-    autonumber 4.1.1
-    comp++
-        comp -[#blue]> server: POST /user/rasp/new/ajax.php, action: edit
-        server++
-            server -[#red]-> comp: Response: отклик с html-кодом
-        server--
-        comp -[#DarkCyan]-> user: форма для заполнения
-        note left
-            пользователь получает
-            форму с полями для
-            изменения данных
-        end note
-        autonumber stop
-        user -[#green]> comp: 4.2 Отправка заполненной формы
-        autonumber 4.2.1
-        comp -[#blue]> server: POST /user/rasp/new/, action: updaterasp
-        server++
-            server -[#red]-> comp: Response: отклик с html-кодом
-        server--
-        comp -[#DarkCyan]-> user: расписание группы
-        
-    autonumber stop
-    comp--
-
-else #Pink удаление строки
-user -[#green]> comp: 4.1 удаление строки с занятием
-    autonumber 4.1.1
-    comp++
-        comp -[#blue]> server: POST /user/rasp/new/ajax.php, action: delete
-        server++
-            server -[#red]-> comp: Response: отклик с html-кодом
-        server--
-        comp -[#DarkCyan]-> user: форма подтверждения удаления
-        note left
-            пользователь получает
-            форму подтверждения
-            удаления занятия
-        end note
-        autonumber stop
-        user -[#green]> comp: 4.2 Подтверждение удаления
-        autonumber 4.2.1
-        comp -[#blue]> server: POST /user/rasp/new/, action: delete
-        server++
-            server -[#red]-> comp: Response: отклик с html-кодом
-        server--
-        comp -[#DarkCyan]-> user: расписание группы
-        
-    autonumber stop
-    comp--
-end
 
 user -[#green]> comp: 5.1 Публикация расписания
     autonumber 5.1.1
-    comp++
+
         comp -[#blue]> server: POST /user/rasp/new/ajax.php, action: public
         server++
             server -[#red]-> comp: Response: отклик с html-кодом

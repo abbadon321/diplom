@@ -8,6 +8,8 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+
+
 app = Flask(__name__)
 app.secret_key = 'mysecretkey'
 
@@ -64,7 +66,8 @@ def authorize():
         right_index = res.text.find("<strong>Ошибка!</strong>")
         left_index = res.text.find("авторизация,") + 11
         name = "Ошибка авторизации! Неверные логин и/или пароль"
-        return redirect(url_for('index'))
+        # return redirect(url_for('index'))
+        return render_template('main.html')
 
     res = my_session.get(system_url)
     index = res.text.find("buid")
@@ -279,16 +282,17 @@ def get_code(group_name):
 
 
 def get_activity(act):
-    act = act.replace(" ", "").replace('\\', "\n").replace('/', "\n")
+    act = act.replace(" ", "").replace('\\', "").replace('/', "").replace(',', '').replace("\n",'')
+    act = act.lower()
     if act == "лек":
         return "лекция"
     elif act == "пр":
         return "практика"
-    elif act == "лек\nпр":
+    elif act == "лекпр" or act == 'леклаб':
         return "лекция, практика"
     elif act == "лаб":
         return "Лабораторная работа"
-    elif act == "СРС":
+    elif act == "срс":
         return "самостоятельная работа"
     else:
         return ""
