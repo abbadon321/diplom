@@ -56,12 +56,18 @@
         font-size: 16px;
       }
     </style>
+      {% if error %}
+      <script>
+        var error = '{{ error }}'
+        alert(error + "\nПроверьте файл с логами!")
+      </script>
+      {% endif %}
   </head>
   <body>
     {% if 'Ошибка' in name %}
     <div style="color: red">{{ name }}</div>
     {% else %}
-    <h1>{{ name }}</h1>
+    <h1>Здравстуйте, {{ name }}!</h1>
     <form action="/schedule" method="post" enctype="multipart/form-data">
       <!-- Форма обучения: -->
       <select name="form" id="studyform">
@@ -79,8 +85,9 @@
         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
         id="schedule"
         name="file"
+        required
       />
-      <button type="submit">Загрузить</button>
+      <button id="submitButton" onclick="disableButton()" type="submit">Загрузить</button>
     </form>
     {% endif %}
   </body>

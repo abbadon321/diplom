@@ -4,21 +4,53 @@ import requests
 from openpyxl import load_workbook
 import re
 
-wb = load_workbook(filename="C:/Users/Серега/Documents/GitHub/diplom/flask/static/1 страница.xlsx")
-sheets_names = wb.sheetnames
+# response = requests.get(
+#             url=f"https://www.s-vfu.ru/stud/searchadddata.php?tablename=svfudbnew.forexcel&term=Попов В")
+# data = response.json()
 
+# print(data)
+
+def get_podgruppa(lesson, q):
+    if lesson.find("1/2") == -1:
+        podgruppa = 0
+    else:
+        podgruppa = q + 1
+    return (podgruppa, (lesson[:len(lesson) - 5]).strip())
+
+wb = load_workbook(filename="C:/Users/Серега/Downloads/пример.xlsx")
+sheets_names = wb.sheetnames
 ws = wb.active
 
-for i in range(3, ws.max_column, 4):
-    group_name = str(ws.cell(row=4, column=i).value).strip()
-    if str(ws.cell(row=3, column=i).value).strip().lower() == "наименование группы":
-        for j in range(6, 42):
-            if ws.cell(row=j, column=i).value is not None:
-                time = str(ws.cell(row=j, column=2).value).replace(
-                                    ".", ":").replace(" -- ", "-")
-                lesson_name = str(ws.cell(
-                                    row=j, column=i).value).strip()
-                print(time, lesson_name, end='\n\n')
+lesson_name = str(ws['C11'].value).split('\n')
+# print(lesson_name)
+for q in range(len(lesson_name)):
+    lesson = lesson_name[q].strip()
+    print(get_podgruppa(lesson, 1))
+
+
+
+
+# print(str(ws['C7'].value))
+
+# lesson = str(ws['C7'].value).split('\n')
+
+# print(len(lesson))
+
+
+# print(sheets_names)
+
+# ws = wb.active
+
+# for i in range(3, ws.max_column, 4):
+#     group_name = str(ws.cell(row=4, column=i).value).strip()
+#     if str(ws.cell(row=3, column=i).value).strip().lower() == "наименование группы":
+#         for j in range(6, 42):
+#             if ws.cell(row=j, column=i).value is not None:
+#                 time = str(ws.cell(row=j, column=2).value).replace(
+#                                     ".", ":").replace(" -- ", "-")
+#                 lesson_name = str(ws.cell(
+#                                     row=j, column=i).value).strip()
+#                 print(time, lesson_name, end='\n\n')
 
 
 
