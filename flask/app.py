@@ -82,7 +82,7 @@ def authorize():
 
     res = my_session.get(system_url)
     soup = BeautifulSoup(res.text, 'html.parser')
-    buid = str(soup.find('input', {'name': 'buid'}))
+    buid = str(soup.find('input', {'name': 'buid'}).get('value'))
     if buid is None:
         error = f'Ошибка при попытке получения идентификатора BITRIX пользователя {name}!'
         logger.error(error)
@@ -202,11 +202,19 @@ def schedule_parse():
 
                 full_semestr, filename = parse_choicerup(response.text)
 
-                if full_semestr is None or filename is None:
+                print(full_semestr, filename)
+
+                if full_semestr == "" or full_semestr is None:
+                    full_semestr = str(
+                                (int(course) - 1) * 2 + int(semestr))
+                    
+                print(full_semestr, filename)
+
+                if filename is None:
                     logger.error("Ошибка при попытке получить значение семестра и РУПа группы! Группа была пропущена")
                     continue
 
-                response = query(action="show", semestr=semestr, course=course, fac=fac,
+                response = query(action="show", semestr=semestr, full_semestr=full_semestr, course=course, fac=fac,
                                     year=year, form=form, code=code, id_group=group_id, filename=filename)
 
                 last_index = str(group_id).rfind("|") + 1
@@ -220,27 +228,27 @@ def schedule_parse():
                     logger.error(f"Ошибка при попытке получить идентификаторы существующих занятий: {e}.\nГруппа пропущена")
                     continue
 
-                # # удаление всех существующих занятий
-                # if len(lessons) > 0:
-                #     for k in range(0, len(lessons), 4):
-                #         query(action="delete", id=1,
-                #               cell_id=lessons[k], full=full, fac=fac)
-                #         query(action="remove", cell_id=lessons[k], full=full, id_group=group_id,
-                #               filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
-                #               fac=fac, year=year, form=form[0], code=code)
+                # удаление всех существующих занятий
+                if len(lessons) > 0:
+                    for k in range(0, len(lessons), 4):
+                        query(action="delete", id=1,
+                              cell_id=lessons[k], full=full, fac=fac)
+                        query(action="remove", cell_id=lessons[k], full=full, id_group=group_id,
+                              filename=filename, semestr=semestr, full_semestr=full_semestr, course=course,
+                              fac=fac, year=year, form=form[0], code=code)
                 
                 weekday = str(
                                 ws.cell(row=6, column=1).value).strip().upper()
 
                 # цикл по занятиям одной группы
                 for j in range(6, 42):
-
+                    if j % 6 == 0:
+                            weekday = str(
+                                ws.cell(row=j, column=1).value).strip().upper()
                     # проверка, что дисциплина есть (наличие пары)
                     if ws.cell(row=j, column=i).value is not None:
                         # получение дня недели
-                        if j % 6 == 0:
-                            weekday = str(
-                                ws.cell(row=j, column=1).value).strip().upper()
+                        
             
                         time = str(ws.cell(row=j, column=2).value).replace(
                             ".", ":").replace(" -- ", "-")
@@ -260,18 +268,24 @@ def schedule_parse():
                                 continue
 
                             lecturers = str(
-                                ws.cell(row=j, column=i + 1).value).split("\n")
+                                ws.cell(row=j, column=i + 1).value)
                             
-                            if len(lecturers) > 1:
-                                lecturer_name = lecturers[q].strip()
+                            if lecturers == "None":
+                                lecturer_name = ""
                             else:
-                                lecturer_name = lecturers[0].strip()
+                                lecturers = str(
+                                    ws.cell(row=j, column=i + 1).value).split("\n")                            
+                                if len(lecturers) > 1:
+                                    lecturer_name = lecturers[q].strip()
+                                else:
+                                    lecturer_name = lecturers[0].strip()
+                            
 
                             # добавление строки в таблицу
                             response = query(action="addrow", full=full)
 
                             # получение данных проподователя с сервера
-                            if lecturer_name != "None":
+                            if lecturer_name != "":
                                 hours, lecturer = parse_addrow(
                                     response.text, lecturer_name)
                             else: 
@@ -280,12 +294,16 @@ def schedule_parse():
                             activity = str(ws.cell(row=j, column=i + 2).value)
                             activity = get_activity(activity)
 
-                            classrooms = str(ws.cell(row=j, column=i + 3).value).split("\n")
-
-                            if len(classrooms) > 1:
-                                classroom = classrooms[q].strip()
+                            classrooms = str(ws.cell(row=j, column=i + 3).value)
+                            
+                            if classrooms == "None":
+                                classroom = ""
                             else:
-                                classroom = classrooms[0].strip()
+                                classrooms = classrooms.split("\n")
+                                if len(classrooms) > 1:
+                                    classroom = classrooms[q].strip()
+                                else:
+                                    classroom = classrooms[0].strip()
 
                             corpus, classroom = extract_corpus(classroom)
 
@@ -294,15 +312,15 @@ def schedule_parse():
                                         lecturer=lecturer, weekday=weekday, time=time, chet=chet, startdate=startdate, enddate=enddate,
                                         activity=activity, corpus=corpus, classroom=classroom, hours=hours, podgruppa=podgruppa)
 
-                    # response = query(action="public_check", full=full, fac=fac)
-                    # if response.text.find(f'После нажатия кнопки "Применить" расписание группы ИМИ-{group_name} будет опубликовано') != -1:
-                    #     print(response.text)
+                    response = query(action="public_check", full=full, fac=fac)
+                    if response.text.find(f'После нажатия кнопки "Применить" расписание группы ИМИ-{group_name} будет опубликовано') != -1:
+                        print(response.text)
 
-                    #     response = query(action="public", full=full, id_group=group_id, filename=filename, semestr=semestr,
-                    #                 full_semestr=full_semestr, course=course, fac=fac, year=year, code=code, form=form[0])
+                        response = query(action="public", full=full, id_group=group_id, filename=filename, semestr=semestr,
+                                    full_semestr=full_semestr, course=course, fac=fac, year=year, code=code, form=form[0])
 
-        return render_template('schedule.html', buid=buid, res=result.text)
-        # return redirect(system_url)
+        # return render_template('schedule.html', buid=buid, res=result.text)
+        return redirect(system_url)
 
     else:
         error = "Ошибка при попытке получения факультета и формы обучения!"
@@ -351,7 +369,8 @@ def get_podgruppa(lesson, q):
         podgruppa = 0
     else:
         podgruppa = q + 1
-    return (podgruppa, (lesson[:len(lesson) - 5]).strip())
+        lesson = (lesson[:len(lesson) - 5]).strip()
+    return (podgruppa, lesson)
 
 
 def get_parity(lesson):
@@ -405,8 +424,10 @@ def extract_corpus(string):
         return (word.group(), number.group())
     elif string == "Спортивный":
         return ("Юность", string)
+    elif string == "дист":
+        return ("Moodle","Интернет")
     else:
-        return ("КФЕН", number.group())
+        return ("КФЕН", string)
 
 
 def query(full="", id="", action="", fac="",
@@ -603,6 +624,7 @@ def query(full="", id="", action="", fac="",
 
     print(action)
     print(data)
+    print(response.text)
     print("=============================================================\n\n")
 
     return response
@@ -624,8 +646,8 @@ def parse_choicerup(html):
     soup = BeautifulSoup(html, 'html.parser')
     plan = soup.find('input', {'name': 'plan'}).get('value')
     semestr = soup.find('input', {'name': 'semestr'}).get('value')
-    if plan and semestr:
-        return (semestr, plan) 
+    if plan:
+        return (semestr, plan)
     return (None, None)
 
 

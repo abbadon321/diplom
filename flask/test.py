@@ -10,22 +10,45 @@ import re
 
 # print(data)
 
-def get_podgruppa(lesson, q):
-    if lesson.find("1/2") == -1:
-        podgruppa = 0
-    else:
-        podgruppa = q + 1
-    return (podgruppa, (lesson[:len(lesson) - 5]).strip())
+string = """
+Установлен семестр : 2<input type="hidden" name="global_semestr" value="2"><input type="hidden" name="semestr" value=""><input type="hidden" name="course" value="1"><input type="hidden" name="fac" value="ИМИ"><input type="hidden" name="year" value="2021"><input type="hidden" name="formshort" value="1"><input type="hidden" name="formname" value="очная"><input type="hidden" name="action" value="show"><input type="checkbox" name="allplany" checked>Показать дисциплины дополнительно предыдущего и следующего семестра (обновление для ЭВ)<hr><input type="hidden" name="code" value="03"><input type="hidden" name="id_group" value="7919|ИМИ-Б-ФИИТ-22|6536">Нельзя менять здесь план, так как идет миграция 2023-2024 год на ММИС <input type="hidden" name="plan" value="02030201_22_1ФИИТ.plx">02030201_22_1ФИИТ.plx <hr> Можете сами задать шаблон дат для добавления расписания, у заочников стоит по умолчанию весь год с 01.08 по 20.01, если ничего не введете будут использованы даты по умолчанию<br>Дата начала семестра <input type="date" name="startdate"> <br> Дата окончания семестра <input type="date" name="enddate">
+"""
 
-wb = load_workbook(filename="C:/Users/Серега/Downloads/пример.xlsx")
-sheets_names = wb.sheetnames
-ws = wb.active
+course = 1
+semestr = 2
 
-lesson_name = str(ws['C11'].value).split('\n')
-# print(lesson_name)
-for q in range(len(lesson_name)):
-    lesson = lesson_name[q].strip()
-    print(get_podgruppa(lesson, 1))
+def parse_choicerup(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    plan = soup.find('input', {'name': 'plan'}).get('value')
+    semestr = soup.find('input', {'name': 'semestr'}).get('value')
+    if plan:
+        return (semestr, plan)
+    return (None, None)
+
+full_semestr, plan = parse_choicerup(string)
+
+if full_semestr == "" or full_semestr is None:
+                    full_semestr = str(
+                                (int(course) - 1) * 2 + int(semestr))
+
+print(full_semestr)
+
+# def get_podgruppa(lesson, q):
+#     if lesson.find("1/2") == -1:
+#         podgruppa = 0
+#     else:
+#         podgruppa = q + 1
+#     return (podgruppa, (lesson[:len(lesson) - 5]).strip())
+
+# wb = load_workbook(filename="C:/Users/Серега/Downloads/пример.xlsx")
+# sheets_names = wb.sheetnames
+# ws = wb.active
+
+# lesson_name = str(ws['C11'].value).split('\n')
+# # print(lesson_name)
+# for q in range(len(lesson_name)):
+#     lesson = lesson_name[q].strip()
+#     print(get_podgruppa(lesson, 1))
 
 
 
